@@ -6,9 +6,10 @@
 #include <cassert>
 #include <src/instance.h>
 #include <src/instanceRegistration.h>
-#include <src/instanceCall.h>
+#include <src/instanceOperations.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"
+#include "InstanceOperationsTest.h"
 
 namespace global {
 namespace tests {
@@ -23,6 +24,8 @@ TestMain::TestMain(int argc, char* argv[])
 
     QApplication app(argc, argv);
 
+
+
     {
         InstanceTest tc;
         if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
@@ -31,6 +34,11 @@ TestMain::TestMain(int argc, char* argv[])
 
     {
         RegistrationTest tc;
+        if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
+    }
+
+    {
+        InstanceOperationsTest tc;
         if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
     }
 

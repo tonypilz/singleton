@@ -5,8 +5,6 @@
 
 namespace global {
 
-class InstanceReplacementNotAllowed : public std::exception {};
-class RegisteringNullNotAllowed: public std::exception {};
 
 
 //replaces existing for the time it exised
@@ -55,6 +53,9 @@ private:
 };
 
 
+class InstanceReplacementNotAllowed : public std::exception {};
+class RegisteringNullNotAllowed: public std::exception {};
+
 
 //expects nullptr to be registered beforehand
 //expects instance which is to be registered to be not null
@@ -81,4 +82,4 @@ public:
 
 };
 
-}
+}//global
