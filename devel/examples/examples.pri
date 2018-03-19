@@ -5,4 +5,5 @@ HEADERS += \
     $$PWD/globalDependency.h \
     $$PWD/globalMocking.h \
     $$PWD/globalMocking2.h \
-    $$PWD/applicationStartup.h
+    $$PWD/applicationStartup.h \
+    $$PWD/applicationstartup2.h

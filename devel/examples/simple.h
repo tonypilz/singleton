@@ -6,22 +6,40 @@
 
 struct A
 {
-    A():reg(this){}                      // calling 'reg(this)' makes 'this' instance globally accessible
-
+    A():reg(this){}                      // calling 'reg(this)' makes 'this' globally accessible
     void foo(){std::cout<<"foo\n";}
-
     global::InstanceRegistration<A> reg;
 };
 
 
 void bar() {
-    global::instance<A>().foo();        //a call to member foo() of the globally accessible instance of of A
+    global::instance<A>().foo();        // a call to foo() of the globally accessible instance of A
 }
 
 
 void main_simple(){
-
-    A a;                               //this makes a globally accessible
-
+    A a;                               // makes 'a' globally accessible
     bar();
+}
+
+namespace withSingleton{
+
+
+struct A
+{
+    static A& instance(){
+        static A i;
+        return i;
+    }
+    void foo(){std::cout<<"foo\n";}
+};
+
+void bar() {
+    A::instance().foo();
+}
+
+void main_simple(){
+    bar();
+}
+
 }
