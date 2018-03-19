@@ -1,6 +1,6 @@
 #include "InstanceTest.h"
 #include <src/instance.h>
-#include <src/instanceRegistration.h>
+#include <src/InstanceRegistration.h>
 
 InstanceTest::InstanceTest(QObject *parent) : QObject(parent)
 {
@@ -12,7 +12,7 @@ void InstanceTest::aRegisteredInstanceIsAccessible()
     class A{};
     A a;
 
-    global::ExclusiveRegistration<A> registration;
+    global::InstanceRegistration<A> registration;
     registration(&a);
 
     QCOMPARE(global::isInstanceDefined<A>(),true);
@@ -31,7 +31,7 @@ void InstanceTest::anUnregisteredSubInstanceIsNotAccessible()
     class A{};
     A a;
 
-    global::ExclusiveRegistration<A> registration;
+    global::InstanceRegistration<A> registration;
     registration(&a);
 
     class Sub{};
@@ -48,7 +48,7 @@ void InstanceTest::aRegisteredSubInstanceIsAccessible()
 
     class Sub{};
 
-    global::ExclusiveRegistration<A,Sub> registration;
+    global::InstanceRegistration<A,Sub> registration;
     registration(&a);
 
 
@@ -63,7 +63,7 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
     struct B : public A{ int x = val; };
     B b;
 
-    global::ExclusiveRegistration<A> registration(&b);
+    global::InstanceRegistration<A> registration(&b);
 
 
     auto res = dynamic_cast<B&>(global::instance<A>());
@@ -81,7 +81,7 @@ void InstanceTest::aDerivedSubInstanceIsAccessibleWithoutSlicing()
     struct B : public A{ int x = val; };
     B b;
 
-    global::ExclusiveRegistration<A,Sub> registration(&b);
+    global::InstanceRegistration<A,Sub> registration(&b);
 
 
     auto res = dynamic_cast<B&>(global::instance<A,Sub>());
@@ -146,14 +146,14 @@ void InstanceTest::noDoubleNotifications()
     class A{};
     A a;
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
     int calls = 0;
     auto& h = global::instanceHooks::instanceChangedHook();
     h = [&calls](){ ++calls; };
 
     QCOMPARE(calls,0);
-    { global::ReplacingScopedRegistration<A> registration(&a);}
+    { global::TolerantInstanceRegistration<A> registration(&a);}
     QCOMPARE(calls,0);
 
     h = std::function<void()>{}; //cleanup installed handler
@@ -177,7 +177,7 @@ void InstanceTest::instanceChangedHandlersTriggered()
 
     {
 
-        global::ExclusiveRegistration<A> registration;
+        global::InstanceRegistration<A> registration;
 
         registration(&a);
 
@@ -189,7 +189,7 @@ void InstanceTest::instanceChangedHandlersTriggered()
             A b;
             expect = &b;
 
-            global::ReplacingScopedRegistration<A> registration;
+            global::TolerantInstanceRegistration<A> registration;
 
             registration(&b);
 

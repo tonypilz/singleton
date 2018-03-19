@@ -9,14 +9,14 @@ namespace global {
 
 //replaces existing for the time it exised
 template<typename T, typename Sub = typename Instance<T>::SubType>
-class ReplacingScopedRegistration {
+class TolerantInstanceRegistration {
 
 public:
 
-    ReplacingScopedRegistration(){}
-    ReplacingScopedRegistration(T* t){registerInstance(t);}
+    TolerantInstanceRegistration(){}
+    TolerantInstanceRegistration(T* t){registerInstance(t);}
     void operator()(T* t){registerInstance(t);}
-    virtual ~ReplacingScopedRegistration(){deregisterInstance();}
+    virtual ~TolerantInstanceRegistration(){deregisterInstance();}
 
     virtual void registerInstance(T* t){
         deregisterInstance();
@@ -45,7 +45,7 @@ public:
 
 private:
 
-    ReplacingScopedRegistration(ReplacingScopedRegistration const&) = delete; //no copy
+    TolerantInstanceRegistration(TolerantInstanceRegistration const&) = delete; //no copy
 
     T* replacedInstance = nullptr;
     bool instanceHasBeenReplaced = false;
@@ -58,17 +58,17 @@ class RegisteringNullNotAllowed: public std::exception {};
 
 
 //expects nullptr to be registered beforehand
-//expects instance which is to be registered to be not null
+//expects registration-target not to be null
 template<typename T, typename Sub = typename Instance<T>::SubType>
-class ExclusiveRegistration : ReplacingScopedRegistration<T,Sub> {
+class InstanceRegistration : TolerantInstanceRegistration<T,Sub> {
 public:
 
-    using Superclass = ReplacingScopedRegistration<T,Sub>;
+    using Superclass = TolerantInstanceRegistration<T,Sub>;
 
-    using ReplacingScopedRegistration<T,Sub>::operator();
+    using TolerantInstanceRegistration<T,Sub>::operator();
 
-    ExclusiveRegistration(): ReplacingScopedRegistration<T,Sub>(){}
-    ExclusiveRegistration(T* t): ReplacingScopedRegistration<T,Sub>(){registerInstance(t);}
+    InstanceRegistration(): TolerantInstanceRegistration<T,Sub>(){}
+    InstanceRegistration(T* t): TolerantInstanceRegistration<T,Sub>(){registerInstance(t);}
     void operator()(T* t){registerInstance(t);}
 
     void registerInstance(T* t) override{

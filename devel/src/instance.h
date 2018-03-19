@@ -53,7 +53,7 @@ private:
 
 
     template<typename,typename>
-    friend class ReplacingScopedRegistration;
+    friend class TolerantInstanceRegistration;
 
     static void set(TPtr t) {
 

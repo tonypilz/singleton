@@ -5,7 +5,7 @@
 #include <iostream>
 #include <cassert>
 #include <src/instance.h>
-#include <src/instanceRegistration.h>
+#include <src/InstanceRegistration.h>
 #include <src/instanceOperations.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"

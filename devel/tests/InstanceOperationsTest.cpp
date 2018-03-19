@@ -1,6 +1,6 @@
 #include "InstanceOperationsTest.h"
 #include <src/instance.h>
-#include <src/instanceRegistration.h>
+#include <src/InstanceRegistration.h>
 #include <src/instanceOperations.h>
 
 InstanceOperationsTest::InstanceOperationsTest(QObject *parent) : QObject(parent)
@@ -13,7 +13,7 @@ void InstanceOperationsTest::functionWillBeCalledDirectlyIfInstanceDefined()
     class A{};
     A a;
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
     bool called = false;
     global::onInstanceDefine<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
@@ -29,10 +29,34 @@ void InstanceOperationsTest::functionWillBeCalledDirectlyIfSubInstanceDefined()
 
     struct MySub{};
 
-    global::ExclusiveRegistration<A,MySub> registration(&a);
+    global::InstanceRegistration<A,MySub> registration(&a);
 
     bool called = false;
     global::onInstanceDefine<A,MySub>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+
+    QCOMPARE(called,true);
+}
+
+void InstanceOperationsTest::functionWillBeCalledDirectlyIfInstanceUndefined()
+{
+    class A{};
+    A a;
+
+    bool called = false;
+    global::onInstanceUndefine<A>([&called,&a](){ called = true;  });
+
+    QCOMPARE(called,true);
+}
+
+void InstanceOperationsTest::functionWillBeCalledDirectlyIfSubInstanceUndefined()
+{
+    class A{};
+    A a;
+
+    struct MySub{};
+
+    bool called = false;
+    global::onInstanceUndefine<A,MySub>([&called,&a](){ called = true;  });
 
     QCOMPARE(called,true);
 }
@@ -46,7 +70,7 @@ void InstanceOperationsTest::functionWillBeCalledIfInstanceIsDefined()
     global::onInstanceDefine<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
     QCOMPARE(called,false);
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(called,true);
 }
@@ -64,7 +88,40 @@ void InstanceOperationsTest::functionWillBeCalledIfSubInstanceIsDefined()
 
     QCOMPARE(called,false);
 
-    global::ExclusiveRegistration<A,MySub> registration(&a);
+    global::InstanceRegistration<A,MySub> registration(&a);
+
+    QCOMPARE(called,true);
+}
+
+void InstanceOperationsTest::functionWillBeCalledIfInstanceIsUndefined()
+{
+    class A{};
+    A a;
+
+    bool called = false;
+    {
+        global::InstanceRegistration<A> registration(&a);
+        global::onInstanceUndefine<A>([&called,&a](){ called = true; });
+        QCOMPARE(called,false);
+    }
+
+    QCOMPARE(called,true);
+}
+
+void InstanceOperationsTest::functionWillBeCalledIfSubInstanceIsUndefined()
+{
+    class A{};
+    A a;
+
+    struct MySub{};
+
+
+    bool called = false;
+    {
+        global::InstanceRegistration<A,MySub> registration(&a);
+        global::onInstanceUndefine<A,MySub>([&called,&a](){ called = true; });
+        QCOMPARE(called,false);
+    }
 
     QCOMPARE(called,true);
 }
@@ -74,7 +131,7 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceDirectly()
     class A{};
     A a;
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
 
     int callCount = 0;
@@ -83,7 +140,7 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceDirectly()
     QCOMPARE(callCount,1);
     A b;
 
-    global::ReplacingScopedRegistration<A> registration1(&b);
+    global::TolerantInstanceRegistration<A> registration1(&b);
 
     QCOMPARE(callCount,1);
 
@@ -98,12 +155,12 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceIndirectly()
     int callCount = 0;
     global::onInstanceDefine<A>([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(callCount,1);
 
     A b;
-    global::ReplacingScopedRegistration<A> registration1(&b);
+    global::TolerantInstanceRegistration<A> registration1(&b);
 
     QCOMPARE(callCount,1);
 }
@@ -113,7 +170,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDe
     class A{};
     A a;
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
     int funcCallCount = 0;
     int condCallCount = 0;
@@ -138,7 +195,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledIfInstanceDefined()
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
-    global::ExclusiveRegistration<A> registration(&a);
+    global::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(funcCallCount,1);
     QVERIFY(condCallCount>0);
@@ -151,7 +208,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanc
 
     struct MySub{};
 
-    global::ExclusiveRegistration<A,MySub> registration(&a);
+    global::InstanceRegistration<A,MySub> registration(&a);
 
     int funcCallCount = 0;
     int condCallCount = 0;
@@ -178,7 +235,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledIfSubInstanceDefined
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
-    global::ExclusiveRegistration<A,MySub> registration(&a);
+    global::InstanceRegistration<A,MySub> registration(&a);
 
     QCOMPARE(funcCallCount,1);
     QVERIFY(condCallCount>0);
@@ -224,7 +281,7 @@ void InstanceOperationsTest::functionsWithDifferentConditionsWillBeCalledOnSubIn
 
     {
 
-        global::ExclusiveRegistration<A,MySub> registration(&a);
+        global::InstanceRegistration<A,MySub> registration(&a);
 
         QCOMPARE(funcCallCount1,n);
         QCOMPARE(funcCallCount2,0);
@@ -264,7 +321,7 @@ void InstanceOperationsTest::recursiveQueuingWorks()
     QCOMPARE(funcCallCount2,0);
 
     {
-        global::ExclusiveRegistration<A,MySub> registration(&a);
+        global::InstanceRegistration<A,MySub> registration(&a);
 
         QCOMPARE(funcCallCount1,1);
         QCOMPARE(funcCallCount2,0);
@@ -275,5 +332,31 @@ void InstanceOperationsTest::recursiveQueuingWorks()
     QCOMPARE(funcCallCount1,1);
     QCOMPARE(funcCallCount2,1);
 
+}
+
+void InstanceOperationsTest::registerForDestructionWorks()
+{
+    class A{};
+    A a;
+
+    struct MySub{};
+
+
+    int funcCallCount = 0;
+
+
+    global::onInstanceDefine<A,MySub>(
+                [&](A&){ global::onInstanceUndefine<A,MySub>(
+                    [&](){ ++funcCallCount;});
+                       });
+
+    QCOMPARE(funcCallCount,0);
+
+    {
+        global::InstanceRegistration<A,MySub> registration(&a);
+        QCOMPARE(funcCallCount,0);
+    }
+
+    QCOMPARE(funcCallCount,1);
 }
 

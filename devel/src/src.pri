@@ -1,7 +1,7 @@
 HEADERS += \
     $$PWD/instance.h \
-    $$PWD/instanceRegistration.h \
     $$PWD/instanceOperations.h \
-    $$PWD/instanceHooks.h
+    $$PWD/instanceHooks.h \
+    $$PWD/InstanceRegistration.h
 
 SOURCES +=

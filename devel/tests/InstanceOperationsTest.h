@@ -17,8 +17,14 @@ private slots:
     void functionWillBeCalledDirectlyIfInstanceDefined();
     void functionWillBeCalledDirectlyIfSubInstanceDefined();
 
+    void functionWillBeCalledDirectlyIfInstanceUndefined();
+    void functionWillBeCalledDirectlyIfSubInstanceUndefined();
+
     void functionWillBeCalledIfInstanceIsDefined();
     void functionWillBeCalledIfSubInstanceIsDefined();
+
+    void functionWillBeCalledIfInstanceIsUndefined();
+    void functionWillBeCalledIfSubInstanceIsUndefined();
 
     void functionWillBeCalledOnlyOnceDirectly();
     void functionWillBeCalledOnlyOnceIndirectly();
@@ -32,6 +38,7 @@ private slots:
     void functionsWithDifferentConditionsWillBeCalledOnSubInstanceChange();
 
     void recursiveQueuingWorks();
+    void registerForDestructionWorks();
 
 };
 
