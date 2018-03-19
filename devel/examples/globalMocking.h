@@ -31,23 +31,23 @@ void testB(){
 
     A_mock a_mock;
 
-    global::ReplacingInstanceRegistration<A> reg(&a_mock); //temporarily make 'a_mock' globally accessible under 'A'
+    global::ReplacingInstanceRegistration<A> reg(&a_mock);  //temporarily make 'a-mock' globally accessible
 
     B b;
 
-    assert(b.bar() == 66);           //b.bar() uses instance of a_mock
+    assert(b.bar() == 66);                                  //b.bar() uses 'a_mock'
 }
 
 
 void main_mockable(){
 
     A a;
-    global::InstanceRegistration<A> reg(&a); //make 'a' globally accessible
+    global::InstanceRegistration<A> reg(&a);                //make 'a' globally accessible
 
     if (testing) testB();
 
     B b;
-    b.bar(); //b.bar() uses instance of a
+    b.bar();                                               //b.bar() uses 'a' again
 }
 
 

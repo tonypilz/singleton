@@ -14,7 +14,7 @@ struct A
 };
 
 
-void bar(){
+void bar() {
     global::instance<A>().foo();        //a call to member foo() of the globally accessible instance of of A
 }
 
