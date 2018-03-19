@@ -106,7 +106,7 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 
     class UntypedTestHandler : public std::exception {};
 
-    global::instanceHandler::nullptrAccessHandler() = [](){ throw UntypedTestHandler();};
+    global::instanceHooks::nullptrAccessHook() = [](){ throw UntypedTestHandler();};
 
 
     try{
@@ -115,7 +115,7 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
     catch(UntypedTestHandler const&){}
     catch(...){ QFAIL("");}
 
-    global::instanceHandler::nullptrAccessHandler() = std::function<void()>{}; //cleanup installed handler
+    global::instanceHooks::nullptrAccessHook() = std::function<void()>{}; //cleanup installed handler
 }
 
 void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
@@ -126,8 +126,8 @@ void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
     class UntypedTestHandler : public std::exception {};
     class TypedTestHandler : public std::exception {};
 
-    auto& hu = global::instanceHandler::nullptrAccessHandler();
-    auto& ht = global::instanceHandler::nullptrAccessHandler<A,global::Instance<A>::SubType>();
+    auto& hu = global::instanceHooks::nullptrAccessHook();
+    auto& ht = global::instanceHooks::nullptrAccessHook<A,global::Instance<A>::SubType>();
 
 
     hu = [](){ throw UntypedTestHandler();};
@@ -149,7 +149,7 @@ void InstanceTest::noDoubleNotifications()
     global::ExclusiveRegistration<A> registration(&a);
 
     int calls = 0;
-    auto& h = global::instanceHandler::instanceChangedHandler();
+    auto& h = global::instanceHooks::instanceChangedHook();
     h = [&calls](){ ++calls; };
 
     QCOMPARE(calls,0);
@@ -168,8 +168,8 @@ void InstanceTest::instanceChangedHandlersTriggered()
 
     int callsu = 0;
     int callst = 0;
-    auto& hu = global::instanceHandler::instanceChangedHandler();
-    auto& ht = global::instanceHandler::instanceChangedHandler<A,global::Instance<A>::SubType>();
+    auto& hu = global::instanceHooks::instanceChangedHook();
+    auto& ht = global::instanceHooks::instanceChangedHook<A,global::Instance<A>::SubType>();
 
     A* expect = &a;
     hu = [&callsu](){ ++callsu; };

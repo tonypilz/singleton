@@ -16,7 +16,7 @@ void InstanceOperationsTest::functionWillBeCalledDirectlyIfInstanceDefined()
     global::ExclusiveRegistration<A> registration(&a);
 
     bool called = false;
-    global::onInstance<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,true);
 
@@ -32,7 +32,7 @@ void InstanceOperationsTest::functionWillBeCalledDirectlyIfSubInstanceDefined()
     global::ExclusiveRegistration<A,MySub> registration(&a);
 
     bool called = false;
-    global::onInstance<A,MySub>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A,MySub>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,true);
 }
@@ -43,7 +43,7 @@ void InstanceOperationsTest::functionWillBeCalledIfInstanceIsDefined()
     A a;
 
     bool called = false;
-    global::onInstance<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
     QCOMPARE(called,false);
 
     global::ExclusiveRegistration<A> registration(&a);
@@ -60,7 +60,7 @@ void InstanceOperationsTest::functionWillBeCalledIfSubInstanceIsDefined()
 
 
     bool called = false;
-    global::onInstance<A,MySub>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A,MySub>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,false);
 
@@ -78,7 +78,7 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceDirectly()
 
 
     int callCount = 0;
-    global::onInstance<A>([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A>([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
     QCOMPARE(callCount,1);
     A b;
@@ -96,7 +96,7 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceIndirectly()
 
 
     int callCount = 0;
-    global::onInstance<A>([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A>([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
     global::ExclusiveRegistration<A> registration(&a);
 
@@ -118,7 +118,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDe
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    global::onInstance<A>(
+    global::onInstanceChange<A>(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -134,7 +134,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledIfInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    global::onInstance<A>(
+    global::onInstanceChange<A>(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -156,7 +156,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanc
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    global::onInstance<A,MySub>(
+    global::onInstanceChange<A,MySub>(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -174,7 +174,7 @@ void InstanceOperationsTest::conditionalFunctionWillBeCalledIfSubInstanceDefined
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    global::onInstance<A,MySub>(
+    global::onInstanceChange<A,MySub>(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -208,8 +208,8 @@ void InstanceOperationsTest::functionsWithDifferentConditionsWillBeCalledOnSubIn
 
     const int n = 20;
     for(int i = 0;i<n;++i){
-        global::onInstance<A,MySub>(c1,f1);
-        global::onInstance<A,MySub>(c2,f2);
+        global::onInstanceChange<A,MySub>(c1,f1);
+        global::onInstanceChange<A,MySub>(c2,f2);
     }
 
 
@@ -249,10 +249,10 @@ void InstanceOperationsTest::recursiveQueuingWorks()
     bool cond1 = false;
     bool cond2 = false;
 
-    global::onInstance<A,MySub>(
+    global::onInstanceChange<A,MySub>(
                 [&](A*){ return cond1;},
                 [&](A*){ ++funcCallCount1;
-                        global::onInstance<A,MySub>(
+                        global::onInstanceChange<A,MySub>(
                                     [&](A*){ return cond2;},
                                     [&](A*){ ++funcCallCount2;});
                        });
@@ -274,7 +274,6 @@ void InstanceOperationsTest::recursiveQueuingWorks()
 
     QCOMPARE(funcCallCount1,1);
     QCOMPARE(funcCallCount2,1);
-
 
 }
 

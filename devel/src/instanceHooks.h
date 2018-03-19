@@ -3,28 +3,28 @@
 #include <functional>
 
 namespace global {
-namespace instanceHandler {
+namespace instanceHooks {
 
 
 
-inline std::function<void()>& nullptrAccessHandler(){
+inline std::function<void()>& nullptrAccessHook(){
     static std::function<void()> h;
     return h;
 }
 
 template<typename T, typename Sub>
-std::function<T*()>& nullptrAccessHandler(){ //todo remove T
+std::function<T*()>& nullptrAccessHook(){ //todo remove T
     static std::function<T*()> h;
     return h;
 }
 
-inline std::function<void()>& instanceChangedHandler(){
+inline std::function<void()>& instanceChangedHook(){
     static std::function<void()> h; //todo auto
     return h;
 }
 
 template<typename T, typename Sub>
-std::function<void(T*)>& instanceChangedHandler(){
+std::function<void(T*)>& instanceChangedHook(){
     static std::function<void(T*)> h;
     return h;
 }

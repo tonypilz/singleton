@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instanceHandler.h"
+#include "instanceHooks.h"
 #include <functional>
 #include <cassert>
 
@@ -26,16 +26,16 @@ public:
             if (p!=nullptr) return *p;
         }
 
-        using namespace instanceHandler;
+        using namespace instanceHooks;
 
         {
-            auto& h = nullptrAccessHandler<T,Sub>();
+            auto& h = nullptrAccessHook<T,Sub>();
             if (h) return *h();
         }
 
 
         {
-            auto& h = nullptrAccessHandler();
+            auto& h = nullptrAccessHook();
             if (h) h();
         }
 
@@ -61,16 +61,16 @@ private:
 
         ptr() = t;
 
-        using namespace instanceHandler;
+        using namespace instanceHooks;
 
         {
-            auto& h = instanceChangedHandler<T,Sub>();
+            auto& h = instanceChangedHook<T,Sub>();
             if (h) h(t);
         }
 
 
         {
-            auto& h = instanceChangedHandler();
+            auto& h = instanceChangedHook();
             if (h) h();
         }
 

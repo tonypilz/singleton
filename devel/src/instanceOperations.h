@@ -16,7 +16,7 @@ public:
     using Classtype = PendingOperations<T,Sub>;
 
     template<typename Cond, typename Func>
-    static void call(Cond cond, Func func){
+    static void onInstanceChange(Cond cond, Func func){
 
         T* p = isInstanceDefined<T,Sub>() ? &Instance<T,Sub>::get() : nullptr;
 
@@ -25,21 +25,21 @@ public:
             return;
         }
 
-        registerRefrenceChangedHandler();
+        connectHook();
         operations().emplace_back(cond,func);
     }
 
 private:
 
-    static void registerRefrenceChangedHandler(){
+    static void connectHook(){
 
         static bool firstCall = true;
         if (firstCall==false) return;
         firstCall = false;
 
-        auto& r = instanceHandler::instanceChangedHandler<T,Sub>(); //todo check each time that handler is installed otherwise throw because somebody changed registration
+        auto& r = instanceHooks::instanceChangedHook<T,Sub>(); //todo check each time that handler is installed otherwise throw because somebody changed registration
         assert(!r);
-        r = [](T* t){callOperations(t);};
+        r = [](T* t){instanceChanged(t);};
     }
 
     using Condition = std::function<bool(T*)>;
@@ -52,7 +52,7 @@ private:
         return c;
     }
 
-    static void callOperations(T* instance) {
+    static void instanceChanged(T* instance) {
         Operations copy = operations();
         operations().clear();
         copy.remove_if([instance](Pair const& p){if (p.first(instance)) {p.second(instance); return true; } return false;});
@@ -64,28 +64,41 @@ private:
 
 
 template<typename T, typename Sub, typename Cond, typename Func>
-void onInstance(Cond c, Func func){
-    PendingOperations<T,Sub>::call(c,func);
+void onInstanceChange(Cond c, Func func){
+    PendingOperations<T,Sub>::onInstanceChange(c,func);
 }
 
 template<typename T, typename Cond, typename Func>
-void onInstance(Cond c, Func func){
-    PendingOperations<T>::call(c,func);
+void onInstanceChange(Cond c, Func func){
+    PendingOperations<T>::onInstanceChange(c,func);
 }
 
 template<typename T, typename Func>
-void onInstance(Func func){
+void onInstanceDefine(Func func){
     auto notNull = [](T* t){return t!=nullptr;};
     auto pfunc = [func](T* t){assert(t!=nullptr); func(*t);};
-    PendingOperations<T>::call(notNull,pfunc);
+    PendingOperations<T>::onInstanceChange(notNull,pfunc);
 }
 
 template<typename T, typename Sub, typename Func >
-void onInstance(Func func){
+void onInstanceDefine(Func func){
     auto notNull = [](T* t){return t!=nullptr;};
     auto pfunc = [func](T* t){assert(t!=nullptr); func(*t);};
-    PendingOperations<T,Sub>::call(notNull,pfunc);
+    PendingOperations<T,Sub>::onInstanceChange(notNull,pfunc);
 }
 
+template<typename T, typename Sub, typename Func >
+void onInstanceUndefine(Func func){
+    auto null = [](T* t){return t==nullptr;};
+    auto pfunc = [func](T* t){assert(t==nullptr); func();};
+    PendingOperations<T,Sub>::onInstanceChange(null,pfunc);
+}
+
+template<typename T, typename Func >
+void onInstanceUndefine(Func func){
+    auto null = [](T* t){return t==nullptr;};
+    auto pfunc = [func](T* t){assert(t==nullptr); func();};
+    PendingOperations<T>::onInstanceChange(null,pfunc);
+}
 
 } //global
