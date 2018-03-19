@@ -7,19 +7,22 @@ namespace instanceHooks {
 
 
 
+
 inline std::function<void()>& nullptrAccessHook(){
     static std::function<void()> h;
     return h;
 }
 
 template<typename T, typename Sub>
-std::function<T*()>& nullptrAccessHook(){ //todo remove T
+std::function<T*()>& nullptrAccessHook(){
     static std::function<T*()> h;
     return h;
 }
 
+
+
 inline std::function<void()>& instanceChangedHook(){
-    static std::function<void()> h; //todo auto
+    static std::function<void()> h;
     return h;
 }
 
@@ -29,5 +32,7 @@ std::function<void(T*)>& instanceChangedHook(){
     return h;
 }
 
-}
-}
+
+
+} //instanceHooks
+} //global

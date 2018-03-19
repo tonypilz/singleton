@@ -7,7 +7,6 @@
 namespace global {
 
 
-//use Sub for mor than one instance, ints can be converted to types (todo demonstration>, alias those instances, dynamic instance count via extra class , multiple subs via extra class
 template<typename T, typename Sub = typename Instance<T>::SubType >
 class PendingOperations {
 
@@ -25,19 +24,19 @@ public:
             return;
         }
 
-        connectHook();
+        connectToHook();
         operations().emplace_back(cond,func);
     }
 
 private:
 
-    static void connectHook(){
+    static void connectToHook(){
 
         static bool firstCall = true;
         if (firstCall==false) return;
         firstCall = false;
 
-        auto& r = instanceHooks::instanceChangedHook<T,Sub>(); //todo check each time that handler is installed otherwise throw because somebody changed registration
+        auto& r = instanceHooks::instanceChangedHook<T,Sub>(); //todo check each time that handler is installed otherwise throw because somebody messed with the hook
         assert(!r);
         r = [](T* t){instanceChanged(t);};
     }
@@ -63,6 +62,7 @@ private:
 
 
 
+
 template<typename T, typename Sub, typename Cond, typename Func>
 void onInstanceChange(Cond c, Func func){
     PendingOperations<T,Sub>::onInstanceChange(c,func);
@@ -72,6 +72,8 @@ template<typename T, typename Cond, typename Func>
 void onInstanceChange(Cond c, Func func){
     PendingOperations<T>::onInstanceChange(c,func);
 }
+
+
 
 template<typename T, typename Func>
 void onInstanceDefine(Func func){
@@ -86,6 +88,8 @@ void onInstanceDefine(Func func){
     auto pfunc = [func](T* t){assert(t!=nullptr); func(*t);};
     PendingOperations<T,Sub>::onInstanceChange(notNull,pfunc);
 }
+
+
 
 template<typename T, typename Sub, typename Func >
 void onInstanceUndefine(Func func){

@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <src/InstanceRegistration.h>
 #include <src/instanceOperations.h>
 #include <iostream>
@@ -39,7 +38,6 @@ void main_dependency(){
     A a;
     B b;        //prints: "a is using value of b:5"
                 //        "b is using value of a:4"
-
 
 }
 

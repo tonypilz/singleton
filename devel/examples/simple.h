@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include <src/InstanceRegistration.h>
 #include <iostream>
 

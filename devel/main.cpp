@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[])
 {
-    dependency::main_dependency();
+    //dependency::main_dependency();
     global::tests::TestMain{argc, argv};
 
     std::cout<<__FILE__<<" finished\n";

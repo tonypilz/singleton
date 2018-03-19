@@ -53,8 +53,11 @@ private:
 };
 
 
+
+
 class InstanceReplacementNotAllowed : public std::exception {};
 class RegisteringNullNotAllowed: public std::exception {};
+
 
 
 //expects nullptr to be registered beforehand
@@ -64,12 +67,10 @@ class InstanceRegistration : TolerantInstanceRegistration<T,Sub> {
 public:
 
     using Superclass = TolerantInstanceRegistration<T,Sub>;
+    using Superclass::operator();
 
-    using TolerantInstanceRegistration<T,Sub>::operator();
-
-    InstanceRegistration(): TolerantInstanceRegistration<T,Sub>(){}
-    InstanceRegistration(T* t): TolerantInstanceRegistration<T,Sub>(){registerInstance(t);}
-    void operator()(T* t){registerInstance(t);}
+    InstanceRegistration(): Superclass(){}
+    InstanceRegistration(T* t): Superclass(){registerInstance(t);}
 
     void registerInstance(T* t) override{
 

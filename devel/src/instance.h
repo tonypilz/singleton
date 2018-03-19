@@ -10,12 +10,11 @@ class NoSub{};
 
 class NullptrAccess : public std::exception {};
 
-//use Sub for mor than one instance, ints can be converted to types (todo demonstration>, alias those instances, dynamic instance count via extra class , multiple subs via extra class
 template<typename T, typename Sub = NoSub >
 class Instance {
 
 public:
-    using TType = T;
+    using Type = T;
     using SubType = Sub;
     using Classtype = Instance<T,Sub>;
     using TPtr = T*;
@@ -51,7 +50,6 @@ public:
 
 private:
 
-
     template<typename,typename>
     friend class TolerantInstanceRegistration;
 
@@ -80,7 +78,6 @@ private:
     Instance() = delete;
 
 
-
     static TPtr& ptr(){
         static TPtr p = nullptr;
         return p;
@@ -88,10 +85,13 @@ private:
 
 };
 
-template<typename T, typename Sub = typename Instance<T>::SubType>
-T& instance(){return Instance<T,Sub>::get();} //just another name
+
+
 
 template<typename T, typename Sub = typename Instance<T>::SubType>
-bool isInstanceDefined(){return Instance<T,Sub>::isDefined();} //just another name
+T& instance(){return Instance<T,Sub>::get();}
 
-}
+template<typename T, typename Sub = typename Instance<T>::SubType>
+bool isInstanceDefined(){return Instance<T,Sub>::isDefined();}
+
+} //global
