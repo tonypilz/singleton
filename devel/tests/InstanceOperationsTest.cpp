@@ -140,7 +140,7 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceDirectly()
     QCOMPARE(callCount,1);
     A b;
 
-    global::TolerantInstanceRegistration<A> registration1(&b);
+    global::ReplacingInstanceRegistration<A> registration1(&b);
 
     QCOMPARE(callCount,1);
 
@@ -160,7 +160,7 @@ void InstanceOperationsTest::functionWillBeCalledOnlyOnceIndirectly()
     QCOMPARE(callCount,1);
 
     A b;
-    global::TolerantInstanceRegistration<A> registration1(&b);
+    global::ReplacingInstanceRegistration<A> registration1(&b);
 
     QCOMPARE(callCount,1);
 }

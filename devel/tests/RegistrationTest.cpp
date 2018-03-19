@@ -73,7 +73,7 @@ void RegistrationTest::replacingInstanceRegistrationReplacesInstanceTemporarily(
     global::InstanceRegistration<A> registration(&a1);
     QCOMPARE(&global::instance<A>(),&a1);
     {
-        global::TolerantInstanceRegistration<A> registration(&a2);
+        global::ReplacingInstanceRegistration<A> registration(&a2);
         QCOMPARE(&global::instance<A>(),&a2);
     }
 
@@ -92,7 +92,7 @@ void RegistrationTest::replacingInstanceSubRegistrationReplacesInstanceTemporari
 
     {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a1);}
     {
-        global::TolerantInstanceRegistration<A,MySub> registration(&a2);
+        global::ReplacingInstanceRegistration<A,MySub> registration(&a2);
         {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a2);}
     }
     {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a1);}
@@ -106,7 +106,7 @@ void RegistrationTest::registrationsCanBeChanged()
     class A{};
     A a1,a2;
 
-    global::TolerantInstanceRegistration<A> registration(&a1);
+    global::ReplacingInstanceRegistration<A> registration(&a1);
     registration.registerInstance(&a2);
 
     {auto r = &global::instance<A>(); QCOMPARE(r,&a2);}
@@ -120,7 +120,7 @@ void RegistrationTest::registrationsSubCanBeChanged()
 
     class MySub{};
 
-    global::TolerantInstanceRegistration<A,MySub> registration(&a1);
+    global::ReplacingInstanceRegistration<A,MySub> registration(&a1);
     registration.registerInstance(&a2);
 
     {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a2);}

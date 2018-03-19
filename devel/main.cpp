@@ -13,6 +13,7 @@
 int main(int argc, char* argv[])
 {
     //dependency::main_dependency();
+    globalMocking::main_mockable();
     global::tests::TestMain{argc, argv};
 
     std::cout<<__FILE__<<" finished\n";

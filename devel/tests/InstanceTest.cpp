@@ -153,7 +153,7 @@ void InstanceTest::noDoubleNotifications()
     h = [&calls](){ ++calls; };
 
     QCOMPARE(calls,0);
-    { global::TolerantInstanceRegistration<A> registration(&a);}
+    { global::ReplacingInstanceRegistration<A> registration(&a);}
     QCOMPARE(calls,0);
 
     h = std::function<void()>{}; //cleanup installed handler
@@ -189,7 +189,7 @@ void InstanceTest::instanceChangedHandlersTriggered()
             A b;
             expect = &b;
 
-            global::TolerantInstanceRegistration<A> registration;
+            global::ReplacingInstanceRegistration<A> registration;
 
             registration(&b);
 

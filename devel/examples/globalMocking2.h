@@ -3,21 +3,27 @@
 #include <type_traits>
 #include <src/InstanceRegistration.h>
 
-namespace globalMocking{
+namespace globalMocking2{
 
 
 constexpr bool testing = true;
 
 
-struct A
+struct A_actual
 {
-    virtual int foo() { return system("rm /tmp/myfile"); }
+    int foo(){ return system("rm /tmp/myfile"); }
 };
 
-struct A_mock  : public A
+
+struct A_mock
 {
-    int foo() override { return 0; }
+    int foo(){ return 0; }
 };
+
+
+
+using A = std::conditional<testing, A_mock, A_actual>::type;
+
 
 
 
@@ -39,15 +45,17 @@ void testB(){
 }
 
 
-void main_mockable(){
+void main_mockable2(){
 
     A a;
     global::InstanceRegistration<A> reg(&a); //make 'a' globally accessible
 
-    if (testing) testB();
+    B t;
 
-    B b;
-    b.bar(); //b.bar() uses instance of a
+    if (testing){
+        assert(t.bar() == 66);               //b uses the foo()-implementation of either A_mock or A_actual depending on the value of 'testing'
+    }
+
 }
 
 

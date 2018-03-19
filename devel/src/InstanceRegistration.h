@@ -9,14 +9,14 @@ namespace global {
 
 //replaces existing for the time it exised
 template<typename T, typename Sub = typename Instance<T>::SubType>
-class TolerantInstanceRegistration {
+class ReplacingInstanceRegistration {
 
 public:
 
-    TolerantInstanceRegistration(){}
-    TolerantInstanceRegistration(T* t){registerInstance(t);}
+    ReplacingInstanceRegistration(){}
+    ReplacingInstanceRegistration(T* t){registerInstance(t);}
     void operator()(T* t){registerInstance(t);}
-    virtual ~TolerantInstanceRegistration(){deregisterInstance();}
+    virtual ~ReplacingInstanceRegistration(){deregisterInstance();}
 
     virtual void registerInstance(T* t){
         deregisterInstance();
@@ -45,7 +45,7 @@ public:
 
 private:
 
-    TolerantInstanceRegistration(TolerantInstanceRegistration const&) = delete; //no copy
+    ReplacingInstanceRegistration(ReplacingInstanceRegistration const&) = delete; //no copy
 
     T* replacedInstance = nullptr;
     bool instanceHasBeenReplaced = false;
@@ -63,10 +63,10 @@ class RegisteringNullNotAllowed: public std::exception {};
 //expects nullptr to be registered beforehand
 //expects registration-target not to be null
 template<typename T, typename Sub = typename Instance<T>::SubType>
-class InstanceRegistration : TolerantInstanceRegistration<T,Sub> {
+class InstanceRegistration : ReplacingInstanceRegistration<T,Sub> {
 public:
 
-    using Superclass = TolerantInstanceRegistration<T,Sub>;
+    using Superclass = ReplacingInstanceRegistration<T,Sub>;
     using Superclass::operator();
 
     InstanceRegistration(): Superclass(){}

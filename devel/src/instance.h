@@ -51,7 +51,7 @@ public:
 private:
 
     template<typename,typename>
-    friend class TolerantInstanceRegistration;
+    friend class ReplacingInstanceRegistration;
 
     static void set(TPtr t) {
 
