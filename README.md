@@ -2,6 +2,19 @@
 The main goal of this library is to provide an alternative to the classical singleton pattern.
 Is allows the user to make instances globally available and not to suffer from most of the drawbacks a singleton solution.
 
+## Tested on
+ - gcc-7.2.0
+
+## Compiles Under
+ - icc-18
+ - gcc-4.9.0 .. gcc-7.3
+ - clang 3.4 .. clang 6.0
+ 
+## Status
+ - Implementation: complete
+ - Tests: complete
+ - Documentation: incomplete
+
 ## Example (singleton)
 
 ```cpp
