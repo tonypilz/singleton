@@ -11,7 +11,7 @@ Is allows the user to make instances globally available and not to suffer from m
  - clang 3.4 .. clang 6.0
  
 ## Status
- - Implementation: complete
+ - Implementation: complete (~200sloc)
  - Tests: complete
  - Documentation: incomplete
 
@@ -36,7 +36,7 @@ void main(){
 }
 ```
 
-## Example (lib)
+## Example (global-instances-access)
 
 ```cpp
 #include <src/InstanceRegistration.h>
@@ -70,4 +70,4 @@ void main(){
 | time of object destruction | fixed, during static destruction | manual control, no restrictions | 
 | object destruction sequence | fixed, hard to be determined | manual control, no restrictions | 
 | access to destructed objects | hard to detect | automatic detection |
-| number of globally accessible instances per type | 1 | not restricted | 
+| number of globally accessible instances per type | 1 (needs modtification for more) | not restricted | 
