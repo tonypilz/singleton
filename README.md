@@ -31,7 +31,7 @@ void bar() {
 
 In the example above, instance `a` is constructed as a regular object in `1`, then made globally accessible in `2` which is then accessed by function `bar()` in `3`. Note on line `4` that instance `a` is made globally inaccessible prior to its destruction. 
 
-The example above showed the basic usage of this library. Not shown by the example were the aspects of [testing](#testing) and delayed access which will be discussed below.
+The example above showed the basic usage of this library. Not shown by the example were the aspects of [testing](#testing) and [delayed access](delayed-access) which will be discussed below.
 
 # Status
 ## Tested on
@@ -162,3 +162,56 @@ void main(){
 ```
 In the example above all calls to `global::onInstanceDefine<T>()` are deferred until the an instance of `T` becomes globally accessible. So constructing the `Logger` in `3` defers the call in `1` until `Settings` becomes globally accessible in `6`. And constructing `Settings` in `5` calls directly `Logger::log` in `2` since an instance of `Logger` was already made globally accessible by `4`.
 
+# Invalid Access Detection
+The attempt to access a global instance without a prior registration will cause an exception to be thrown by default. This default behaviour can be changed as follows:
+```cpp
+
+void main(){
+
+ struct A{};
+ 
+ global::instanceHooks::nullptrAccessHook<A>() = [](){ return new A(); };  // 1) change default behaviour
+ 
+ global::instance<Logger>();                                               // 2) invalid global access
+
+}
+```
+In the example above the invalid access in `2` causes a call to `1`, which returns a dummy instance to A instead of throwing an exception.
+
+# Multiple Instances of the Same Type
+The library supports providing access to multiple instances of the same type as shown below:
+
+```cpp
+struct A
+{
+    void foo(){std::cout<<"foo\n";}
+};
+
+struct Red{};
+struct Green{};
+struct Blue{};
+
+void bar();
+
+void main(){
+    A a1,a2,a3;                                          // 1)
+
+    global::InstanceRegistration<A,Red>   reg1(&a1);     // 2)
+    global::InstanceRegistration<A,Green> reg2(&a2);     // 3)
+    global::InstanceRegistration<A,Blue>  reg3(&a3);     // 4)
+    
+    bar();
+}                                        
+
+void bar() {
+    global::instance<A,Blue>().foo();                    // 5)
+}
+
+```
+
+In the example above three instances are created in `1` and made globally accessible in `2`-`4`. The third instance is then accessed in `5`. This can also be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{};` would lead to accessing instances via `global::instance<A,Index<4,6>>().foo();`
+
+
+# Bad Pracices
+ - do not change the `instanceChangedHook` unless you know what your are doing. This would disable the delayed access.
+ - do not reintroduce coupling between instance access and instance lifetime by putting the registration object into the class to be registered 
