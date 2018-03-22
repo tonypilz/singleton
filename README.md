@@ -5,7 +5,7 @@ This library improves the classical singleton pattern with respect to
  - control over seqcence and timepoint of construction/destruction
  - invalid access detection
  
-by separating instance access from instance lifetime, illustrated by the following example:
+This is achieved by separating the instance access from the instance lifetime, which is illustrated by the following example:
 
 ```cpp
 #include <src/InstanceRegistration.h>
@@ -29,9 +29,9 @@ void bar() {
 
 ```
 
-In the example, instance `a` is constructed as a regular object in `1`, then made globally accessible in `2` and then accessed globally by function `bar()` in `3`. Note that in `4` instance `a` is deregistered first before it is destructed.   
+In the example, instance `a` is constructed as a regular object in `1`, then made globally accessible in `2` which is then accessed by function `bar()` in `3`. Note that instance `a` is in `4` first made globally inaccessible before it is destroyed. 
 
-The example covers the basic usage of this library. Not covered by the example are the aspects of [testing](#testing) and delayed access which will be shown below.
+The example showed the basic usage of this library. Not shown by the example were the aspects of [testing](#testing) and delayed access which will be discussed below.
 
 # Status
 ## Tested on
