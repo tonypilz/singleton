@@ -5,7 +5,7 @@ This library improves the classical singleton pattern with respect to
  - control over seqcence and timepoint of construction/destruction
  - invalid access detection
  
-It is achieved by decoupling instance access from the instance lifetime. The following example illustrates this:
+It is achieved by decoupling instance access from the instance lifetime. The following example illustrates the basic usage of the library:
 
 ```cpp
 #include <src/InstanceRegistration.h>
@@ -84,3 +84,81 @@ void bar_test(){
 
 ```
 In the example above the function the function `bar()` is tested by the call in `4`. The function `bar()` accesses in `1` a global instance of type `A` which is therefore be replaced in `3` by the instance `a_mock` before executing the test. So the call to `bar()` in `4` leads to the call of `A_mock::foo()` which skips the syscall and returns `0`. 
+
+# Delayed Access
+On larger projects global instances depend on each other as shown in the following example:
+```cpp
+struct Logger{
+
+ Logger(){
+  m_logLevel = global::instance<Settings>().getLogLevel();   // 1)
+ }
+ 
+ void log(const char* msg);
+ 
+ int m_logLevel;
+};
+
+
+struct Settings{
+
+ Settings(){
+   if (readSettingsFile()==success)
+     global::instance<Logger>().log("settings file found");  // 2)
+ }
+ 
+ int getLogLevel();
+ 
+};
+
+void main(){
+ Logger logger;                                             // 3) access to settings
+ global::InstanceRegistration<Logger> regL(&logger);        
+ Settings settings;
+ global::InstanceRegistration<Settings> regS(&settings); 
+}
+```
+In the example above the constructor of `Logger` uses in `1` the globally accessible instance of `Settings` and vice versa in `2`. Therefore one instance will not have been fully constructed yet upon access. The classical solution to this kind of problem would be to fall back to a 2 phase initialisation for global instances which is error prone und reduces readability².
+
+²In many cases program startup is split into multiple stages and initialization code is dispersed. 
+
+However, this library allows for a better solution:
+```cpp
+struct Logger{
+
+ Logger() {
+    global::onInstanceDefine<Settings>(
+        [this](Settings& s){
+           m_logLevel = s.getLogLevel();                       // 1)
+        });             
+ }
+ 
+ void log(const char* msg);
+ 
+ int m_logLevel;
+};
+
+
+struct Settings{
+
+ Settings(){ 
+   if (readSettingsFile()==success)
+     global::onInstanceDefine<Logger>(
+        [this](Logger& l){
+           m_logLevel = l.log("settings file found");          // 2)
+        });   
+ }
+ 
+ int getLogLevel();
+ 
+};
+
+void main(){
+ Logger logger;                                                // 3)
+ global::InstanceRegistration<Logger> regL(&logger);           // 4)
+ Settings settings;                                            // 5)
+ global::InstanceRegistration<Settings> regS(&settings);       // 6)
+}
+```
+In the example above all calls to `global::onInstanceDefine<T>()` are deferred until the an instance of `T` becomes globally accessible. So constructing the `Logger` in `3` defers the call in `1` until `Settings` becomes globally accessible in `6`. And constructing `Settings` in `5` calls directly `Logger::log` in `2` since an instance of `Logger` was already made globally accessible by `4`.
+
