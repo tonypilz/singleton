@@ -1,8 +1,8 @@
 # Overview
 This library improves the classical singleton pattern with respect to 
  - testing
- - arguments for the constructor 
  - control over seqcence and timepoint of construction/destruction
+ - arguments for the constructor 
  - invalid access detection
  
 It is achieved by decoupling instance access from the instance lifetime. The following example illustrates the basic usage of the library:
@@ -29,7 +29,7 @@ void bar() {
 
 ```
 
-In the example above, instance `a` is constructed as a regular object in `1`, then made globally accessible in `2` which is then accessed by function `bar()` in `3`. Note on line `4` that instance `a` is made globally inaccessible prior to its destruction. 
+In the example above, instance `a` is constructed as a regular object in `1`, then made globally accessible in `2` which is then accessed by function `bar()` in `3`. On line `4` instance `a` is made globally inaccessible prior to its destruction. 
 
 The example above showed the basic usage of this library. Not shown by the example were the aspects of [testing](#testing) and [delayed access](delayed-access) which will be discussed below.
 
