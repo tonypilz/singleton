@@ -12,7 +12,7 @@ struct A
 };
 
 void bar() {
-    global::instance<A>().foo();        // access global instance of A
+    global::instance<A>()->foo();        // access global instance of A
 }
 
 void main_(){

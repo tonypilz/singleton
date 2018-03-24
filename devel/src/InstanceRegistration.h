@@ -1,5 +1,6 @@
 #pragma once
 
+#include "OptionalValue.h"
 #include "instance.h"
 #include <cassert>
 
@@ -20,15 +21,15 @@ public:
 
     virtual void registerInstance(T* t){
         deregisterInstance();
-        replacedInstance = detail::initializedInstance<T,Sub>().unfilteredValue();
-        detail::initializedInstance<T,Sub>() = t; //possibly deregisters again
+        replacedInstance = instance<T,Sub>().ptr();
+        instance<T,Sub>() = t; //possibly deregisters again
     }
 
     virtual void deregisterInstance(){
         if (replacedInstance.isValueSet()==false) return; //noting to do
         T* tmp = replacedInstance;
         replacedInstance.unsetValue();
-        detail::initializedInstance<T,Sub>() = tmp; //possibly registers again
+        instance<T,Sub>() = tmp; //possibly registers again
     }
 
 private:
@@ -61,7 +62,7 @@ public:
 
     void registerInstance(T* t) override{
 
-        if (isInstanceDefined<T,Sub>()) throw InstanceReplacementNotAllowed();
+        if (instance<T,Sub>()!=nullptr) throw InstanceReplacementNotAllowed();
         if (t==nullptr) throw RegisteringNullNotAllowed();
 
         Superclass::registerInstance(t);

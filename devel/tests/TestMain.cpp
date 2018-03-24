@@ -6,7 +6,6 @@
 #include <cassert>
 #include <src/instance.h>
 #include <src/InstanceRegistration.h>
-#include <src/instanceOperations.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"
 #include "InstanceOperationsTest.h"

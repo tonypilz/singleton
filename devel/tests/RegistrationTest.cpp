@@ -12,12 +12,12 @@ void RegistrationTest::leavingTheScopeOfASingleInstanceRegistrationDeregistersIn
     class A{};
     A a;
 
-    QCOMPARE(global::isInstanceDefined<A>(),false);
+    QVERIFY(global::instance<A>()==nullptr);
     {
         global::InstanceRegistration<A> registration(&a);
-        QCOMPARE(global::isInstanceDefined<A>(),true);
+        QVERIFY(global::instance<A>()!=nullptr);
     }
-    QCOMPARE(global::isInstanceDefined<A>(),false);
+    QVERIFY(global::instance<A>()==nullptr);
 }
 
 void RegistrationTest::leavingTheScopeOfASubSingleInstanceRegistrationDeregistersInstance()
@@ -27,12 +27,12 @@ void RegistrationTest::leavingTheScopeOfASubSingleInstanceRegistrationDeregister
 
     class MySub{};
 
-    {const bool def = global::isInstanceDefined<A,MySub>(); QCOMPARE(def,false);}
+    {const bool def = global::instance<A,MySub>(); QCOMPARE(def,false);}
     {
         global::InstanceRegistration<A,MySub> registration(&a);
-        {const bool def = global::isInstanceDefined<A,MySub>(); QCOMPARE(def,true);}
+        {const bool def = global::instance<A,MySub>(); QCOMPARE(def,true);}
     }
-    {const bool def = global::isInstanceDefined<A,MySub>(); QCOMPARE(def,false);}
+    {const bool def = global::instance<A,MySub>(); QCOMPARE(def,false);}
 }
 
 void RegistrationTest::singleInstanceRegistrationAllowsOnlySingleRegistration()
@@ -71,13 +71,13 @@ void RegistrationTest::replacingInstanceRegistrationReplacesInstanceTemporarily(
     A a1,a2;
 
     global::InstanceRegistration<A> registration(&a1);
-    QCOMPARE(&global::instance<A>(),&a1);
+    QVERIFY(global::instance<A>()==&a1);
     {
         global::ReplacingInstanceRegistration<A> registration(&a2);
-        QCOMPARE(&global::instance<A>(),&a2);
+        QVERIFY(global::instance<A>()==&a2);
     }
 
-   QCOMPARE(&global::instance<A>(),&a1);
+   QVERIFY(global::instance<A>()==&a1);
 
 }
 
@@ -90,12 +90,12 @@ void RegistrationTest::replacingInstanceSubRegistrationReplacesInstanceTemporari
 
     global::InstanceRegistration<A,MySub> registration(&a1);
 
-    {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a1);}
+    {auto same = global::instance<A,MySub>()==&a1; QVERIFY(same );}
     {
         global::ReplacingInstanceRegistration<A,MySub> registration(&a2);
-        {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a2);}
+        {auto same = global::instance<A,MySub>()==&a2; QVERIFY(same );}
     }
-    {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a1);}
+    {auto same = global::instance<A,MySub>()==&a1; QVERIFY(same );}
 
 
 }
@@ -109,7 +109,7 @@ void RegistrationTest::registrationsCanBeChanged()
     global::ReplacingInstanceRegistration<A> registration(&a1);
     registration.registerInstance(&a2);
 
-    {auto r = &global::instance<A>(); QCOMPARE(r,&a2);}
+    {auto same = global::instance<A>()==&a2; QVERIFY(same);}
 
 }
 
@@ -123,7 +123,7 @@ void RegistrationTest::registrationsSubCanBeChanged()
     global::ReplacingInstanceRegistration<A,MySub> registration(&a1);
     registration.registerInstance(&a2);
 
-    {auto r = &global::instance<A,MySub>(); QCOMPARE(r,&a2);}
+    {auto same = global::instance<A,MySub>()==&a2; QVERIFY(same);}
 
 }
 

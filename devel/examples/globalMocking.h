@@ -23,7 +23,7 @@ struct A_mock  : public A
 
 struct B
 {
-    int bar(){ return global::instance<A>().foo() ? 77 : 66;}
+    int bar(){ return global::instance<A>()->foo() ? 77 : 66;}
 };
 
 

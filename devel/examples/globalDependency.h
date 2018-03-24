@@ -1,7 +1,6 @@
 #pragma once
 
 #include <src/InstanceRegistration.h>
-#include <src/instanceOperations.h>
 #include <iostream>
 
 namespace dependency {
@@ -24,12 +23,12 @@ struct B
 
 
 A::A():reg(this){
-    global::onInstanceDefine<B>([this](B& b){
+    global::instance<B>().visitIfNotNull([this](B& b){
         std::cout<<"a is using value of b:" << b.val << "\n";});
 }
 
 B::B():reg(this){
-    global::onInstanceDefine<A>([this](A& a){
+    global::instance<A>().visitIfNotNull([this](A& a){
         std::cout<<"b is using value of a:" << a.val << "\n";});
 }
 

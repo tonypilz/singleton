@@ -27,11 +27,6 @@ private slots:
     void gettingNullInvokesInstalledTypeHandlerBeforeUntyped();
 
 
-    void noDoubleNotifications();
-
-    void instanceChangedHandlersTriggered();
-
-
 };
 
 #endif // INSTANCETEST_H

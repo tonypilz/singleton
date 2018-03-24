@@ -17,7 +17,7 @@ public:
     }
 
 
-    void execute(T const& t){
+    void operator()(T const& t){
         auto copy = std::move(operations);
         operations.clear();
         for(auto const& op:copy){
