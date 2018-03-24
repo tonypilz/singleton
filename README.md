@@ -1,11 +1,11 @@
 # Overview
-This library improves the classical singleton pattern with respect to 
+The library improves the classical singleton pattern with respect to 
  - testing
- - control over seqcence and timepoint of construction/destruction
- - arguments for the constructor 
- - invalid access detection
+ - controling timepoint and seqence of object construction/destruction
+ - constructor-arguments 
+ - destroyed instance access detection
  
-It is achieved by decoupling instance access from the instance lifetime. The following example illustrates the basic usage of the library:
+This is achieved by decoupling instance access from the instance lifetime. The following example illustrates the basic idea/usage:
 
 ```cpp
 #include <src/InstanceRegistration.h>
@@ -29,9 +29,15 @@ void bar() {
 
 ```
 
-In the example above, instance `a` is constructed as a regular object in `1`, then made globally accessible in `2` which is then accessed by function `bar()` in `3`. On line `4` instance `a` is made globally inaccessible prior to its destruction. 
+On line `1)` in the example above, instance `a` gets constructed as a regular object and is then on line `2)` made globally accessible. Then  on line `3)` instance `a` is accessed by function `bar()` via global access. On line `4)` instance `a` gets destructed, and before that happens it gets globally inaccessible due to the destruction of `reg` which is basically as a scoped registration. 
 
-The example above showed the basic usage of this library. Not shown by the example were the aspects of [testing](#testing) and [delayed access](delayed-access) which will be discussed below.
+The example above does not cover all aspectes there are to it. Not covered were aspects of 
+ - [testing](testing) 
+ - [delayed access](delayed-access) 
+ - [invalid access detection](invalid-access-detection)
+ - [multiple instances of the same type](multiple-instances-of-the-same-type)
+ 
+ which will be discussed below.
 
 # Status
 ## Tested on
@@ -162,6 +168,23 @@ void main(){
 ```
 In the example above all calls to `global::onInstanceDefine<T>()` are deferred until the an instance of `T` becomes globally accessible. So constructing the `Logger` in `3` defers the call in `1` until `Settings` becomes globally accessible in `6`. And constructing `Settings` in `5` calls directly `Logger::log` in `2` since an instance of `Logger` was already made globally accessible by `4`.
 
+Warning: The delayed access feature registeres itself on its first usage to the `instanceChangedHook`. So overwriting the hook afterwards will disable this feature since the hook does not do the callback to the delayed access feature anymore. In order to have both working one has to make sure the delayed access callback gets called back by calling it manually from another callback, eg.
+
+```cpp
+
+void main(){
+
+   global::onInstanceDefine<Settings>([](Settings&){});                      // 1) make delayed access register its hook
+   
+   auto callback =  global::instanceHooks::instanceChangedHook<Settings>();  // 2) get a copy of the installed callback
+   
+   global::instanceHooks::instanceChangedHook<Settings>() = [callback](Settings&s){
+      std::cout<<"settings instance changed\n";
+      if (callback) callback(s);                                             //call previously installed callback manually
+      };                       
+}
+```
+
 # Invalid Access Detection
 The attempt to access a global instance without a prior registration will cause an exception to be thrown by default. This default behaviour can be changed as follows:
 ```cpp
@@ -213,5 +236,6 @@ In the example above three instances are created in `1` and made globally access
 
 
 # Bad Pracices
- - do not change the `instanceChangedHook` unless you know what your are doing. This would disable the delayed access.
+The following practices are not recommended to do: 
+ - the hook `instanceChangedHook` shouldnt be changed since its beeing used by. This would disable the delayed access.
  - do not reintroduce coupling between instance access and instance lifetime by putting the registration object into the class to be registered 
