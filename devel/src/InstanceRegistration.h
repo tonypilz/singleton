@@ -8,7 +8,7 @@ namespace global {
 
 
 //replaces existing for the time it exised
-template<typename T, typename Sub = typename Instance<T>::SubType>
+template<typename T, typename Sub = detail::staticValueSubDefault>
 class ReplacingInstanceRegistration {
 
 public:
@@ -20,35 +20,22 @@ public:
 
     virtual void registerInstance(T* t){
         deregisterInstance();
-        instanceHasBeenReplaced = true;
-
-        assert(replacedInstance==nullptr);
-
-        if (isInstanceDefined<T,Sub>()){
-            replacedInstance = &Instance<T,Sub>::get();
-        } else {
-            replacedInstance = nullptr;
-        }
-
-        Instance<T,Sub>::set(t); //possibly deregisters again
+        replacedInstance = detail::initializedInstance<T,Sub>().unfilteredValue();
+        detail::initializedInstance<T,Sub>() = t; //possibly deregisters again
     }
 
     virtual void deregisterInstance(){
-        if (instanceHasBeenReplaced==false) return; //noting to do
-        instanceHasBeenReplaced = false;
-
-        auto tmp = replacedInstance;
-        replacedInstance = nullptr;
-
-        Instance<T,Sub>::set(tmp); //possibly registers again
+        if (replacedInstance.isValueSet()==false) return; //noting to do
+        T* tmp = replacedInstance;
+        replacedInstance.unsetValue();
+        detail::initializedInstance<T,Sub>() = tmp; //possibly registers again
     }
 
 private:
 
     ReplacingInstanceRegistration(ReplacingInstanceRegistration const&) = delete; //no copy
 
-    T* replacedInstance = nullptr;
-    bool instanceHasBeenReplaced = false;
+    detail::OptionalValue<T*> replacedInstance;
 
 };
 
@@ -62,7 +49,7 @@ class RegisteringNullNotAllowed: public std::exception {};
 
 //expects nullptr to be registered beforehand
 //expects registration-target not to be null
-template<typename T, typename Sub = typename Instance<T>::SubType>
+template<typename T, typename Sub = detail::staticValueSubDefault>
 class InstanceRegistration : ReplacingInstanceRegistration<T,Sub> {
 public:
 

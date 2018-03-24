@@ -1,97 +1,81 @@
 #pragma once
 
-#include "instanceHooks.h"
+#include "staticValue.h"
+#include "ObservableValue.h"
+#include "NullptrAccessHandler.h"
 #include <functional>
 #include <cassert>
 
 namespace global {
 
-class NoSub{};
 
-class NullptrAccess : public std::exception {};
+class ReadFilterNotExpected : public std::exception {};
 
-template<typename T, typename Sub = NoSub >
-class Instance {
 
-public:
-    using Type = T;
-    using SubType = Sub;
-    using Classtype = Instance<T,Sub>;
-    using TPtr = T*;
+namespace detail {
 
-    static T& get() {
-        {
-            TPtr p = ptr();
-            if (p!=nullptr) return *p;
+template<typename T, typename Sub>
+ObservableValue<T*>& initializedInstance(){
+
+    static bool firstCall = true;
+    if (firstCall==false) return staticValue<ObservableValue<T*>,Sub>();
+    firstCall = false;
+
+    auto& value = staticValue<ObservableValue<T*>,Sub>();
+    value = nullptr; //no invalid reads
+
+    if (value.readFilter) throw ReadFilterNotExpected();
+
+    value.readFilter = [](T* const& t){
+        if (t==nullptr) {
+
+            {
+                auto& h = staticValue<NullptrAccessHandlerT<T*>, Sub>().handler;
+                if (h) return h();
+            }
+
+            {
+                auto& h = staticValue<NullptrAccessHandler,Sub>().handler;
+                if (h) h();
+            }
+
+            {
+                auto& h = staticValue<NullptrAccessHandler>().handler;
+                h(); //throws if not set!
+            }
         }
 
-        using namespace instanceHooks;
+        return t;
+    };
 
-        {
-            auto& h = nullptrAccessHook<T,Sub>();
-            if (h) return *h();
-        }
+    return value;
+}
 
-
-        {
-            auto& h = nullptrAccessHook();
-            if (h) h();
-        }
-
-        throw NullptrAccess(); //we cannot return a nullptr, so we throw
-
-        assert(false); //we shouldnt be here
-        T* nullptr_ = nullptr;
-        return *nullptr_;
-    }
-
-    static bool isDefined(){return ptr()!=nullptr;}
+} //detail
 
 
-private:
+template<typename T, typename Sub = detail::staticValueSubDefault>
+T* instancePtrOr(T* alt){ //this method retreives the value withouth filtering
+    auto& i = detail::initializedInstance<T,Sub>();
+    return i==nullptr ? alt : i.unfilteredValue();
+}
 
-    template<typename,typename>
-    friend class ReplacingInstanceRegistration;
+template<typename T, typename Sub = detail::staticValueSubDefault>
+T* instancePtr(){ return detail::initializedInstance<T,Sub>().filteredValue(); }
 
-    static void set(TPtr t) {
+template<typename T, typename Sub = detail::staticValueSubDefault>
+T& instance(){ return *instancePtr<T,Sub>(); }
 
-        if (t==ptr()) return; //nothing changed;
+template<typename T, typename Sub = detail::staticValueSubDefault>
+bool isInstanceDefined(){return detail::initializedInstance<T,Sub>()!=nullptr;} //value is always set since its initialized
 
-        ptr() = t;
+template<typename T, typename Sub = detail::staticValueSubDefault>
+typename NullptrAccessHandlerT<T*>::type& onNullptrAccess(){ return detail::staticValue<NullptrAccessHandlerT<T*>,Sub>().handler; }
 
-        using namespace instanceHooks;
-
-        {
-            auto& h = instanceChangedHook<T,Sub>();
-            if (h) h(t);
-        }
-
-
-        {
-            auto& h = instanceChangedHook();
-            if (h) h();
-        }
-
-    }
-
-
-    Instance() = delete;
-
-
-    static TPtr& ptr(){
-        static TPtr p = nullptr;
-        return p;
-    }
-
-};
+inline NullptrAccessHandler::type& onNullptrAccess(){ return detail::staticValue<NullptrAccessHandler>().handler; }
 
 
 
 
-template<typename T, typename Sub = typename Instance<T>::SubType>
-T& instance(){return Instance<T,Sub>::get();}
-
-template<typename T, typename Sub = typename Instance<T>::SubType>
-bool isInstanceDefined(){return Instance<T,Sub>::isDefined();}
 
 } //global

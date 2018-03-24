@@ -14,9 +14,9 @@ void InstanceTest::aRegisteredInstanceIsAccessible()
 
     global::InstanceRegistration<A> registration;
     registration(&a);
-
+    global::isInstanceDefined<A>();
     QCOMPARE(global::isInstanceDefined<A>(),true);
-    QCOMPARE(&global::instance<A>(),&a);
+    QCOMPARE(global::instancePtr<A>(),&a);
 
 }
 
@@ -106,7 +106,7 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 
     class UntypedTestHandler : public std::exception {};
 
-    global::instanceHooks::nullptrAccessHook() = [](){ throw UntypedTestHandler();};
+    global::onNullptrAccess() = [](){ throw UntypedTestHandler();};
 
 
     try{
@@ -115,7 +115,7 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
     catch(UntypedTestHandler const&){}
     catch(...){ QFAIL("");}
 
-    global::instanceHooks::nullptrAccessHook() = std::function<void()>{}; //cleanup installed handler
+    global::onNullptrAccess() = std::function<void()>{}; //cleanup installed handler
 }
 
 void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
@@ -126,8 +126,8 @@ void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
     class UntypedTestHandler : public std::exception {};
     class TypedTestHandler : public std::exception {};
 
-    auto& hu = global::instanceHooks::nullptrAccessHook();
-    auto& ht = global::instanceHooks::nullptrAccessHook<A,global::Instance<A>::SubType>();
+    auto& hu = global::onNullptrAccess();
+    auto& ht = global::onNullptrAccess<A>();
 
 
     hu = [](){ throw UntypedTestHandler();};
@@ -148,15 +148,17 @@ void InstanceTest::noDoubleNotifications()
 
     global::InstanceRegistration<A> registration(&a);
 
+
+    auto& value = global::detail::initializedInstance<A,global::detail::staticValueSubDefault>();
+
     int calls = 0;
-    auto& h = global::instanceHooks::instanceChangedHook();
-    h = [&calls](){ ++calls; };
+    value.valueChanged = [&calls](A* const&){ ++calls; };
+
 
     QCOMPARE(calls,0);
     { global::ReplacingInstanceRegistration<A> registration(&a);}
     QCOMPARE(calls,0);
 
-    h = std::function<void()>{}; //cleanup installed handler
 
 }
 
@@ -166,22 +168,22 @@ void InstanceTest::instanceChangedHandlersTriggered()
     class A{};
     A a;
 
-    int callsu = 0;
-    int callst = 0;
-    auto& hu = global::instanceHooks::instanceChangedHook();
-    auto& ht = global::instanceHooks::instanceChangedHook<A,global::Instance<A>::SubType>();
+    auto& value = global::detail::initializedInstance<A,global::detail::staticValueSubDefault>();
 
-    A* expect = &a;
-    hu = [&callsu](){ ++callsu; };
-    ht = [&callst,&expect](A* t){ ++callst; QCOMPARE(t,expect); };
+    int callst = 0;
+
+    A* expect = nullptr;
+
+    value.valueChanged = [&callst,&expect](A* t){ ++callst; QCOMPARE(t,expect); };
 
     {
 
         global::InstanceRegistration<A> registration;
 
+        expect = &a;
+
         registration(&a);
 
-        QCOMPARE(callsu,1);
         QCOMPARE(callst,1);
 
 
@@ -193,27 +195,19 @@ void InstanceTest::instanceChangedHandlersTriggered()
 
             registration(&b);
 
-            QCOMPARE(callsu,2);
             QCOMPARE(callst,2);
 
             expect = &a;
 
         }
 
-
-        QCOMPARE(callsu,3);
         QCOMPARE(callst,3);
 
         expect = nullptr;
     }
 
-
-
-    QCOMPARE(callsu,4);
     QCOMPARE(callst,4);
 
-    hu = std::function<void()>{}; //cleanup installed handler
-    ht = std::function<void(A*)>{}; //cleanup installed handler
 }
 
 

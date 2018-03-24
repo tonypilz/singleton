@@ -14,13 +14,7 @@
 
 int main(int argc, char* argv[])
 {
-    staticValue<ObservableStaticValue<int>::Asignment>() = [](int& t, int&& s){
-        std::cout<<"assigning " << s << "\n";
-        t = std::forward<int>(s);
-    };
 
-
-    ObservableStaticValue<int>::set(5);
 
     //dependency::main_dependency();
     globalMocking::main_mockable();

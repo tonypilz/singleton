@@ -16,7 +16,7 @@ void InstanceOperationsTest::functionWillBeCalledDirectlyIfInstanceDefined()
     global::InstanceRegistration<A> registration(&a);
 
     bool called = false;
-    global::onInstanceDefine<A>([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    global::onInstanceDefine<A>([&called,&a](A const&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,true);
 

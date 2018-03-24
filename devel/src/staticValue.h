@@ -1,42 +1,16 @@
 #pragma once
 
-#include <functional>
+namespace global {
+namespace detail {
 
-//flache hierarchie
-//umbenennen in global detail staticvalue
+struct staticValueSubDefault{};
 
-//in detail?
-
-template<typename T, typename Sub = void>
+template<typename T, typename Sub = staticValueSubDefault>
 T& staticValue(){
     static T t;
     return t;
 }
 
-template<typename T>
-class ObservableStaticValue {
 
-public:
-    using Type = T;
-    using Classtype = ObservableStaticValue<T>;
-
-    using ReadFilter = std::function<const T&(T&)>;
-    using Asignment = std::function<void (T&, T&&)>;
-
-    static const T& get() {
-        const auto& filter = staticValue<ReadFilter>();
-        return filter ? filter(staticValue<T,PrivateType>()) : staticValue<T,PrivateType>();
-    }
-
-    static void set(T&& t) {
-        const auto& assign= staticValue<Asignment>();
-        if (assign)
-            assign(staticValue<T,PrivateType>(),std::forward<T>(t));
-        else
-            staticValue<T,PrivateType>() = t;
-    }
-
-private:
-    struct PrivateType{};
-    ObservableStaticValue() = delete;
-};
+} //detail
+} //global
