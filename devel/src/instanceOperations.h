@@ -12,6 +12,8 @@ class PendingOperations {
 
 public:
 
+
+
     using Classtype = PendingOperations<T,Sub>;
 
     template<typename Cond, typename Func>

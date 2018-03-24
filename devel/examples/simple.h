@@ -3,24 +3,25 @@
 #include <src/InstanceRegistration.h>
 #include <iostream>
 
+namespace simple {
+
 
 struct A
 {
-    A():reg(this){}                      // calling 'reg(this)' makes 'this' globally accessible
     void foo(){std::cout<<"foo\n";}
-    global::InstanceRegistration<A> reg;
 };
 
-
 void bar() {
-    global::instance<A>().foo();        // a call to foo() of the globally accessible instance of A
+    global::instance<A>().foo();        // access global instance of A
 }
 
-
-void main_simple(){
-    A a;                               // makes 'a' globally accessible
+void main_(){
+    A a;
+    global::InstanceRegistration<A> reg(&a); // make a globally accessible
     bar();
 }
+
+
 
 namespace withSingleton{
 
@@ -42,4 +43,5 @@ void main_simple(){
     bar();
 }
 
+}
 }
