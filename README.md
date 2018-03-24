@@ -32,10 +32,11 @@ void bar() {
 On line `1)` in the example above, instance `a` gets constructed as a regular object and is then on line `2)` made globally accessible. Then  on line `3)` instance `a` is accessed by function `bar()` via global access. On line `4)` instance `a` gets destructed, and before that happens it gets globally inaccessible due to the destruction of `reg` which is basically as a scoped registration. 
 
 The example above does not cover all aspectes there are to it. Not covered were aspects of 
- - [testing](testing) 
- - [delayed access](delayed-access) 
- - [invalid access detection](invalid-access-detection)
- - [multiple instances of the same type](multiple-instances-of-the-same-type)
+ - [testing](#testing) 
+ - [delayed access](#delayed-access) 
+ - [invalid access detection](#invalid-access-detection)
+ - [multiple instances of the same type](#multiple-instances-of-the-same-type)
+ - [various aspects](#various-aspects)
  
  which will be discussed below.
 
@@ -217,10 +218,34 @@ void bar() {
 
 In the example above three instances are created in line `1)` and made globally accessible in lines `2)`-`4)`. The third instance is then accessed on line `5)`. 
 
-Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{};`, which would allow to access the instances via `global::instance<A,Index<4,6>>()`
+Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow to access the instances via `global::instance<A,Index<4,6>>()`
 
+# Various Aspects
+In this paragraph, some minor aspects to using this library are discussed.
 
-# Bad Pracices
-The following practices are not recommended to do: 
- - the hook `instanceChangedHook` shouldnt be changed since its beeing used by. This would disable the delayed access.
- - do not reintroduce coupling between instance access and instance lifetime by putting the registration object into the class to be registered 
+## Thread Savety
+This library is not threadsave. In most cases, this is not a problem though since registration/deregistration of global instances usually happens at the beginning on program startup and during shutdown which is usually done by a single thread. And in the time between calls to `global::instance<T>()` are constant and therefore thread save.
+
+## Static destruction
+Since static variables are used to provide global instance access one should keep in mind that they run out of scope during static destruction and that they should not be used anyomore at that point in time. 
+
+## Registration Instances Within Global Instances
+
+A registration instance can in general be located inside the instance to be registered:
+
+```cpp
+
+struct A{
+ A(){reg(this);} 
+ void foo(){}
+ global::InstanceRegistration<A> reg(&a); 
+};
+
+void main(){
+ A a;  // from this point to till the end of the scope 'a' can be accessed via global::instance<A>()
+ global::instance<A>().foo();
+}
+```
+While this is possible it is not recommended for the following 2 reasons:
+ 1. It is errorprone, since the registration in the constructor must be done after the class invariant ist established. Failing in doing so would allow to access an invalid global instance which happens more often then one would think!
+ 2. It combines accessibility management with lifetime management which is exactly what we find in the classical singleton and therefore what brings back some of its drawback.
