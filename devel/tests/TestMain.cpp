@@ -1,4 +1,6 @@
 
+#include "ConditionalSingleShotOperationsTest.h"
+#include "OptionalValueTest.h"
 #include "TestMain.h"
 
 #include <ratio>
@@ -8,7 +10,7 @@
 #include <src/InstanceRegistration.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"
-#include "InstanceOperationsTest.h"
+
 
 namespace global {
 namespace tests {
@@ -37,11 +39,19 @@ TestMain::TestMain(int argc, char* argv[])
     }
 
     {
-        InstanceOperationsTest tc;
+        ConditionalSingleShotOperationsTest tc;
         if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
     }
 
+    {
+        OptionalValueTest tc;
+        if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
+    }
+
+
 }
+
+
 }
 }
 

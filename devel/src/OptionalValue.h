@@ -12,16 +12,8 @@ template<typename T>
 class OptionalValue {
 
 public:
-    using ValueType = T;
-    using Classtype = OptionalValue<T>;
 
     explicit OptionalValue(){}
-    OptionalValue(OptionalValue<T>const& other):val(other.val),isSet(other.isSet){}
-    OptionalValue<T>const& operator=(OptionalValue<T>const& other) {val = other.val; isSet = other.isSet;}
-
-    bool operator==(OptionalValue<T>const& other) const {return val == other.val && isSet == other.isSet;}
-    bool operator==(T const& t) const {return val == t && isSet == true;}
-    bool operator!=(T const& t) const {return !(*this == t);}
 
     OptionalValue& operator=(T const& t){
         val = t;
@@ -35,9 +27,6 @@ public:
     }
 
     bool isValueSet() const{return isSet;}
-
-    T valueOr(T const& other){ return isSet ? val : other; }
-
     void unsetValue(){ isSet = false;}
 
 private:

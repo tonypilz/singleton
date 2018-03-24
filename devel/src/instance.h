@@ -7,11 +7,7 @@
 #include <cassert>
 
 namespace global {
-
 namespace detail {
-
-
-
 
 template<typename Ptr>
 class Instance {
