@@ -96,7 +96,8 @@ struct A_mock  : public A
 
 void bar_test(){
 
-    global::TestInstance<A,A_mock> a_mock;     // 5) temporarily replace the global instance of 'A' by an instance of 'A_mock'
+    global::TestInstance<A,A_mock> a_mock;     // 5) temporarily replace the global instance
+                                               //    of 'A' by an instance of 'A_mock'
 
     assert(bar() == 66);                       // 6) call to bar()
 }                                                             
@@ -266,38 +267,37 @@ The mechanism of [Delayed Access](#delayed-access) should be used whenever acces
 ```cpp
 
 struct Logger{
-  void log(const char* msg);
+    void log(const char* msg);
 };
 
 struct Database{
-  const char* readSettings();
+    const char* readSettings();
 }
 
 struct Settings{
 
- Settings(){ 
-   global::instance<Database>().visitIfNotNull(
-     [this](Database& db){
-        
-        this->setData(db.readSettings());
-     
-        global::instance<Logger>().visitIfNotNull(
-          [this](Logger& l){
-            
-            l.log("settings file found in database");
-         
-         });   
- }
+   Settings(){ 
+     global::instance<Database>().visitIfNotNull(
+       [this](Database& db){
+
+          this->setData(db.readSettings());
+
+          global::instance<Logger>().visitIfNotNull(
+            [this](Logger& l){
+
+              l.log("settings file found in database");
+
+           });   
+   }
 
 };
 
-void main(){
- Logger logger;                                                
- global::InstanceRegistration<Logger> regL(&logger);           
- Settings settings;                                            
- global::InstanceRegistration<Settings> regS(&settings);       
- Database db;                                                
- global::InstanceRegistration<Database> regS(&db);       
+void main(){        
+
+   global::Instance<Logger> logger;                                                    
+   global::Instance<Settings> settings;                                              
+   global::Instance<Database> db;     
+ 
 }
 ```
 As can be seen in the example above, the constructor of `Settings` depends on more than one global instance namely `Database` and `Logger`. Resolving this by hand can be quite tedious since `Database` or `Logger` could as well be waiting for other global instances. Using [Delayed Access](#delayed-access) in a nested manner makes this an easy solvable problem.
