@@ -6,55 +6,45 @@
 namespace globalMocking2{
 
 
-constexpr bool testing = true;
-
-
 struct A_actual
 {
     int foo(){ return system("rm /tmp/myfile"); }
 };
 
 
-struct A_mock
+struct A_mock : public A
 {
     int foo(){ return 0; }
 };
 
 
-
+constexpr bool testing = true;
 using A = std::conditional<testing, A_mock, A_actual>::type;
 
 
 
+int bar(){
 
-struct B
-{
-    int bar(){ return global::instance<A>().foo() ? 77 : 66;}
-};
+    return global::instance<A>()->foo() ? 77 : 66;
+
+}
 
 
 void testB(){
 
-    A_mock a_mock;
-
-    global::detail::ReplacingInstanceRegistration<A> reg(&a_mock); //temporarily make 'a_mock' globally accessible under 'A'
-
-    B b;
-
-    assert(b.bar() == 66);           //b.bar() uses instance of a_mock
+    assert(bar() == 66);                   // bar() uses instance of a_mock
 }
 
 
 void main_mockable2(){
 
-    A a;
-    global::detail::InstanceRegistration<A> reg(&a); //make 'a' globally accessible
-
-    B t;
+    global::Instance<A> a;                 // make 'a' globally accessible
 
     if (testing){
-        assert(t.bar() == 66);               //b uses the foo()-implementation of either A_mock or A_actual depending on the value of 'testing'
+        testB();               // bar uses the foo()-implementation of either A_mock or A_actual depending on the value of 'testing'
     }
+
+    bar();
 
 }
 

@@ -20,35 +20,27 @@ struct A_mock  : public A
     int foo() override { return 0; }
 };
 
+int bar(){
 
+    return global::instance<A>()->foo() ? 77 : 66;
 
-struct B
-{
-    int bar(){ return global::instance<A>()->foo() ? 77 : 66;}
-};
-
+}
 
 void testB(){
 
-    A_mock a_mock;
+    global::TestInstance<A,A_mock> a_mock;  //temporarily make an instance of A_mock globally accessible
 
-    global::detail::ReplacingInstanceRegistration<A> reg(&a_mock);  //temporarily make 'a-mock' globally accessible
-
-    B b;
-
-    assert(b.bar() == 66);                                  //b.bar() uses 'a_mock'
+    assert(bar() == 66);                    //bar() uses 'a_mock'
 }
 
 
 void main_mockable(){
 
-    A a;
-    global::detail::InstanceRegistration<A> reg(&a);                //make 'a' globally accessible
+    global::Instance<A> a;                  //make 'a' globally accessible
 
     if (testing) testB();
 
-    B b;
-    b.bar();                                               //b.bar() uses 'a' again
+    bar();                                  //bar() uses 'a' again
 }
 
 
