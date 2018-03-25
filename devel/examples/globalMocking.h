@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <src/InstanceRegistration.h>
+#include <cassert>
 
 namespace globalMocking{
 

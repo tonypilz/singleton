@@ -4,6 +4,7 @@ HEADERS += \
     $$PWD/staticValue.h \
     $$PWD/ConditionalSingleShotOperations.h \
     $$PWD/NullptrAccessHandler.h \
-    $$PWD/OptionalValue.h
+    $$PWD/OptionalValue.h \
+    $$PWD/InstancePointer.h
 
 SOURCES +=
