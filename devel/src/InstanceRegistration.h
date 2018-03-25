@@ -78,9 +78,9 @@ public:
 
 template<
     template<typename, typename> class RegistrationType,
-    typename T,
+    typename R,
     typename Sub,
-    typename R>
+    typename T>
 class RegisterdInstanceT {
 
     T t;
@@ -94,17 +94,17 @@ public:
 
 } //detail
 
-template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault>
-using Instance = detail::RegisterdInstanceT<detail::InstanceRegistration, T, Sub, R>;
+template<typename R, typename T = R, typename Sub = detail::staticValueSubDefault>
+using Instance = detail::RegisterdInstanceT<detail::InstanceRegistration, R, Sub, T>;
 
-template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault>
-using TestInstance = detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, T, Sub, R>;
+template<typename R, typename T = R, typename Sub = detail::staticValueSubDefault>
+using TestInstance = detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, R, Sub, T>;
 
-template<typename T, typename Sub, typename R = T>
-using SubInstance = detail::RegisterdInstanceT<detail::InstanceRegistration, T, Sub, R>;
+template<typename R, typename Sub, typename T = R>
+using SubInstance = detail::RegisterdInstanceT<detail::InstanceRegistration, R, Sub, T>;
 
-template<typename T, typename Sub, typename R = T>
-using SubTestInstance = detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, T, Sub, R>;
+template<typename R, typename Sub, typename T = R>
+using SubTestInstance = detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, R, Sub, T>;
 
 
 

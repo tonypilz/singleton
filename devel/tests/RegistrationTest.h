@@ -26,10 +26,12 @@ private slots:
     void registrationsCanBeChanged();
     void registrationsSubCanBeChanged();
 
-    void registerdInstanceWorks();
-    void registerdInstanceWorksSub();
+    void InstanceBasicallyWorks();
+    void InstanceBasicallyWorksSub();
 
-    void registerdInstanceWorksWithArgsSub();
+    void InstanceBasicallyWorksWithBaseclass();
+
+    void InstanceBasicallyWorksWithArgsSub();
 
 
 };

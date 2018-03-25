@@ -127,15 +127,25 @@ void RegistrationTest::registrationsSubCanBeChanged()
 
 }
 
-void RegistrationTest::registerdInstanceWorks()
+void RegistrationTest::InstanceBasicallyWorks()
 {
 
     class A{ };
     global::Instance<A> a;
     QVERIFY(global::instance<A>()!=nullptr);
+
+    try {
+        global::Instance<A> b;
+    }
+    catch(global::InstanceReplacementNotAllowed const&){
+
+    }
+    catch(...){
+        QFAIL("");
+    }
 }
 
-void RegistrationTest::registerdInstanceWorksSub()
+void RegistrationTest::InstanceBasicallyWorksSub()
 {
     class A{ };
     class Sub {};
@@ -145,7 +155,15 @@ void RegistrationTest::registerdInstanceWorksSub()
     QVERIFY(def);
 }
 
-void RegistrationTest::registerdInstanceWorksWithArgsSub()
+void RegistrationTest::InstanceBasicallyWorksWithBaseclass()
+{
+    struct Base { virtual int foo()=0;};
+    struct A : public Base{ int foo() override {return 4;} };
+    global::Instance<Base,A> a;
+    QCOMPARE(global::instance<Base>()->foo(),4);
+}
+
+void RegistrationTest::InstanceBasicallyWorksWithArgsSub()
 {
     struct A{ double x; std::string y; A(const double x_, const std::string& y_):x(x_),y(y_){} };
     class Sub {};
