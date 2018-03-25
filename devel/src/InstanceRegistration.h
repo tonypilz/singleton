@@ -2,7 +2,7 @@
 
 #include "OptionalValue.h"
 #include "instance.h"
-#include <cassert>
+#include <utility>
 
 namespace global {
 
@@ -70,5 +70,29 @@ public:
 
 
 };
+
+
+template<
+    template<typename, typename> class RegistrationType,
+    typename T,
+    typename Sub,
+    typename R>
+class RegisterdInstanceT {
+
+    T t;
+    RegistrationType<R,Sub> reg;
+
+public:
+    template<typename... Args>
+    RegisterdInstanceT(Args&&... args):t(std::forward<Args>(args)...),reg(&t){}
+
+};
+
+template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
+using RegisterdInstance = RegisterdInstanceT<InstanceRegistration, T, Sub, R>;
+
+template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
+using RRegisterdInstance = RegisterdInstanceT<ReplacingInstanceRegistration, T, Sub, R>;
+
 
 }//global

@@ -24,7 +24,12 @@ private slots:
     void replacingInstanceSubRegistrationReplacesInstanceTemporarily();
 
     void registrationsCanBeChanged();
-     void registrationsSubCanBeChanged();
+    void registrationsSubCanBeChanged();
+
+    void registerdInstanceWorks();
+    void registerdInstanceWorksSub();
+
+    void registerdInstanceWorksWithArgsSub();
 
 
 };
