@@ -44,9 +44,11 @@ The example above does not cover all aspectes there are to it. Not covered were
  - gcc-7.2.0
 
 ## Compiles Under
- - icc-18
  - gcc-4.9.0 .. gcc-7.3
  - clang 3.4 .. clang 6.0
+ - icc-18
+
+The compiler flag `-std=c++11` is used
  
 ## Status
  - Implementation: complete (~200sloc)
