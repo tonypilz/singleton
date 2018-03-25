@@ -33,6 +33,9 @@ private slots:
 
     void InstanceBasicallyWorksWithArgsSub();
 
+    void TestInstanceBasicallyWorks();
+    void TestInstanceBasicallyWorksSub();
+
 
 };
 

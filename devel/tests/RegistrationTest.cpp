@@ -181,4 +181,40 @@ void RegistrationTest::InstanceBasicallyWorksWithArgsSub()
 
 }
 
+void RegistrationTest::TestInstanceBasicallyWorks()
+{
+
+    struct A { virtual int foo(){ return 4; }};
+    global::Instance<A> a;
+
+    {
+        struct A_Mock : public A { int foo() override { return 5; }};
+        global::TestInstance<A,A_Mock> a_mock;
+
+        QCOMPARE(global::instance<A>()->foo(),5);
+    }
+
+    QCOMPARE(global::instance<A>()->foo(),4);
+
+}
+
+void RegistrationTest::TestInstanceBasicallyWorksSub()
+{
+    struct Sub{};
+
+    struct A { virtual int foo(){ return 4; }};
+    global::SubTestInstance<A,Sub> a;
+
+    {
+        struct A_Mock : public A { int foo() override { return 5; }};
+        global::SubTestInstance<A,Sub, A_Mock> a_mock;
+
+        const auto val = global::instance<A,Sub>()->foo();
+        QCOMPARE(val,5);
+    }
+
+    const auto val = global::instance<A,Sub>()->foo();
+    QCOMPARE(val,4);
+}
+
 
