@@ -332,3 +332,5 @@ struct RegisterdInstanceT {
 ```
 is created which is an aggregate of two objects, the first beeing an instance `A` and the second beeing a scoped registration object. This object registers a given adress to an instance of `A` in its constructor and deregisteres it in its destructor. Register means here that the provided address of `A` is copied to the above mentioned globally accessible object of type `InstancePointer<A*>`. Deregister means here clearing the address copied before.   
 
+This concludes the basic mechanism. The rest of the functionality is a detail around the just described central mechanism, eg. error handling and checking. 
+
