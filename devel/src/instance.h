@@ -10,16 +10,16 @@ namespace global {
 namespace detail {
 
 template<typename Ptr>
-class Instance {
+class InstancePointer {
 
 public:
     using ValueType = Ptr;
-    using Classtype = Instance<Ptr>;
+    using Classtype = InstancePointer<Ptr>;
 
     using NullPtrAccessHandler = std::function<Ptr()>;
     using ValueChanged = std::function<void (Ptr const&)>;
 
-    explicit Instance(){}
+    explicit InstancePointer(){}
 
     bool operator==(Ptr const& t) const{ return val == t;}
     bool operator!=(Ptr const& t) const{ return val != t;}
@@ -69,7 +69,7 @@ public:
 
 private:
 
-    Instance& operator=(Ptr const& t){
+    InstancePointer& operator=(Ptr const& t){
         if (val == t) return *this; //nothing changed
         val = t;
         changeOperations(val);
@@ -79,8 +79,8 @@ private:
     template<typename, typename>
     friend class ReplacingInstanceRegistration;
 
-    Instance(Instance<Ptr>const&) = delete;
-    Instance<Ptr>const& operator=(Instance<Ptr>const&) = delete;
+    InstancePointer(InstancePointer<Ptr>const&) = delete;
+    InstancePointer<Ptr>const& operator=(InstancePointer<Ptr>const&) = delete;
 
     detail::ConditionalSingleShotOperations<Ptr> changeOperations;
 
@@ -91,7 +91,7 @@ private:
 } //detail
 
 template<typename T, typename Sub = detail::staticValueSubDefault>
-detail::Instance<T*>& instance(){ return detail::staticValue<detail::Instance<T*>>();}
+detail::InstancePointer<T*>& instance(){ return detail::staticValue<detail::InstancePointer<T*>>();}
 
 inline NullptrAccessHandler::type& onNullptrAccess(){ return detail::staticValue<NullptrAccessHandler>().handler; } //global handler
 

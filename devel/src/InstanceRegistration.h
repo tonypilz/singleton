@@ -88,11 +88,18 @@ public:
 
 };
 
-template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
+//default sub type
+template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault >
 using RegisterdInstance = RegisterdInstanceT<InstanceRegistration, T, Sub, R>;
 
-template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
+template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault >
 using RRegisterdInstance = RegisterdInstanceT<ReplacingInstanceRegistration, T, Sub, R>;
 
+//default registration type
+template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
+using RegisterdInstanceS = RegisterdInstanceT<InstanceRegistration, T, Sub, R>;
+
+template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
+using RRegisterdInstanceS = RegisterdInstanceT<ReplacingInstanceRegistration, T, Sub, R>;
 
 }//global

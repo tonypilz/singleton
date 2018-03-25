@@ -139,7 +139,7 @@ void RegistrationTest::registerdInstanceWorksSub()
 {
     class A{ };
     class Sub {};
-    global::RegisterdInstance<A,Sub> a;
+    global::RegisterdInstanceS<A,Sub> a;
 
     const auto def = global::instance<A,Sub>()!=nullptr;
     QVERIFY(def);
@@ -149,7 +149,7 @@ void RegistrationTest::registerdInstanceWorksWithArgsSub()
 {
     struct A{ double x; std::string y; A(const double x_, const std::string& y_):x(x_),y(y_){} };
     class Sub {};
-    global::RegisterdInstance<A,Sub> a(3,"bla");
+    global::RegisterdInstanceS<A,Sub> a(3,"bla");
 
     {
         auto eq = global::instance<A,Sub>()->x == 3;
