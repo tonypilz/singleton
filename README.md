@@ -305,3 +305,30 @@ As can be seen in the example above, the constructor of `Settings` depends on mo
  Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized easily. For more details see section [Under the Hood](#under-the-hood) below.
  
  # Under the Hood
+ 
+ To understand how it works we have to take a closer look at the two central expressions from the first example:
+  - `global::instance<A>()->foo();` and
+  - `global::Instance<A> a;`
+ 
+We begin with `global::instance<A>()->foo();`
+
+The expression `global::instance<A>()` is a regular function, which returns a reference to a globally accessible static object of type `InstancePointer<A*>`. This object is created the first time the method is called and it holds the pointer to the actual instance of `A` which should be accessed globally. The expression `global::instance<A>()->foo();` can therefore also be written as
+
+```cpp
+InstancePointer<A*>& ref = global::instance<A>();
+ref->foo();
+```
+
+The class `InstancePointer<A*>` has its own the `operator ->` which returns a pointer to the last registered instance of type `A`. If none was registered then the respective error handlers will be called. The class `InstancePointer<A*>` also provides means to register operations which are called after the instance pointer to `A` changes which makes delayed access to `A` possible. 
+
+What we have not seen so far is how an instance of `A` gets registered to the static object of type `InstancePointer<A*>`. This is done by the second central expression `global::Instance<A> a;`. What happens here is that an object of type `RegisterdInstanceT`: 
+
+```cpp
+struct RegisterdInstanceT {
+    A a;
+    InstanceRegistration<A> reg;
+    RegisterdInstanceT() : a, reg(&a) {}
+};
+```
+is created which is an aggregate of two objects, the first beeing an instance `A` and the second beeing a scoped registration object. This object registers a given adress to an instance of `A` in its constructor and deregisteres it in its destructor. Register means here that the provided address of `A` is copied to the above mentioned globally accessible object of type `InstancePointer<A*>`. Deregister means here clearing the address copied before.   
+
