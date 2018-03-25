@@ -100,9 +100,9 @@ void bar_test(){
 
     A_mock a_mock;                                           
 
-    global::ReplacingInstanceRegistration<A> reg(&a_mock);     // 5) temporarily redirect calls to global::instance<A>()
+    global::ReplacingInstanceRegistration<A> reg(&a_mock); // 5) temporarily redirect calls to global::instance<A>()
 
-    assert(bar() == 66);                                       // 6) call to bar()
+    assert(bar() == 66);                                   // 6) call to bar()
     
 }                                                             
 
@@ -146,9 +146,9 @@ In the example above the constructor of `Logger` uses in line `1)` the globally 
  - initialization code is split onto two or more methods
  - state space about initialization state is increased  
  - class internal knowledge like 'if class A is constrcuted then do b' might leak out
- - fragility raises since implicit asumptions about initialization order are incorporated into code
+ - fragility raises since implicit assumptions about initialization order are embedded into the code
 
-All of these problems can be adressed by a queuing mechanism which allows to automatically execute initialization steps if they become applicable as shown in the example below: 
+All of these problems can be adressed by a queuing mechanism which allows to automatically execute initialization steps if global instances become accessible as shown in the example below: 
 
 ```cpp
 struct Logger{
@@ -169,13 +169,14 @@ struct Logger{
 struct Settings{
 
  Settings(){ 
-   if (readSettingsFile()==success)
+   if (readSettingsFile())
      global::instance<Logger>().visitIfNotNull(
         [this](Logger& l){
-           m_logLevel = l.log("settings file found");          // 2)
+           l.log("settings file found");                       // 2)
         });   
  }
  
+ bool readSettingsFile();
  int getLogLevel();
  
 };
@@ -190,7 +191,7 @@ void main(){
 In the example above all calls to `global::instance<T>().visitIfNotNull()` are deferred until the an instance of `T` becomes globally accessible. So constructing the `Logger` in line `3)` defers the call of line `1)` until `Settings` becomes globally accessible, which is in line `6)`. The construction of `Settings` in line `5)` makes a direct call in line in `2)` to `Logger::log` since an instance of `Logger` is at that point already globally accessible due to line `4)`.
 
 # Invalid Access Detection
-The attempt to access a global instance without a prior registration will cause an exception to be thrown by default. This default behaviour can be changed as follows:
+The attempt to access a global instance without a prior registration will by default cause an exception to be thrown. This default behaviour can be changed as follows:
 ```cpp
 
 void main(){
@@ -204,6 +205,21 @@ void main(){
 }
 ```
 In the example above the invalid access in line `2)` causes a call to line `1)`, which returns a dummy instance to `A` instead of throwing an exception.
+
+Note that there can also be a customized global handler which is used if no local one (as customized in the example above) is available:
+```cpp
+
+void main(){
+
+ struct A{};
+ 
+ global::onNullptrAccess() = [](){ throw "this is not good"; };
+ 
+ global::instance<A>();
+
+}
+```
+Note that since this handler is used for all types the handler cannot provide an alternative instance. 
 
 # Multiple Instances of the Same Type
 The library supports providing access to multiple instances of the same type as shown below:
@@ -238,20 +254,19 @@ void bar() {
 
 In the example above three instances are created in line `1)` and made globally accessible in lines `2)`-`4)`. The third instance is then accessed on line `5)`. 
 
-Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow to access the instances via `global::instance<A,Index<4,6>>()`
+Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow to access the instances via `global::instance<A,Index<4,6>>()`.
 
 # Various Aspects
 In this paragraph, some minor aspects to using this library are discussed.
 
 ## Thread Savety
-This library is not threadsave. In most cases, this is not a problem though since registration/deregistration of global instances usually happens at the beginning on program startup and during shutdown which is usually done by a single thread. And in the time between calls to `global::instance<T>()` are constant and therefore thread save.
+This library is not threadsave. But in most cases, this is not a problem since registration/deregistration of global instances usually happens at the beginning and during shutdown which is usually done by a single thread. And in the time between calls to `global::instance<T>()` are constant and therefore thread save.
 
 ## Static destruction
 Since static variables are used to provide global instance access one should keep in mind that they run out of scope during static destruction and that they should not be used anyomore at that point in time. 
 
-## Registration Instances Within Global Instances
-
-A registration instance can in general be located inside the instance to be registered:
+## Where to Perform the Registrations
+In general there is no restriction where to store a registration object and when to make the call to it to make an instance globally accessible. So it can e.g. be located inside the instance to be registered:
 
 ```cpp
 
@@ -262,15 +277,59 @@ struct A{
 };
 
 void main(){
- A a;  // from this point to till the end of the scope 'a' can be accessed via global::instance<A>()
+ A a;                                             // from this point to till the end of the 
+                                                  // scope 'a' can be accessed via global::instance<A>()
  global::instance<A>().foo();
 }
 ```
-While this is possible it is not recommended for the following 2 reasons:
- 1. It is errorprone, since the registration in the constructor must be done after the class invariant ist established. Failing in doing so would allow to access an invalid global instance which happens more often then one would think!
- 2. It combines accessibility management with lifetime management which is exactly what we find in the classical singleton and therefore what brings back some of its drawback.
+While this looks more elegant and less errorprone than the manual registration seen in the other examples it is not recommended for the following 2 reasons:
+ 1. It is errorprone, since the registration in the constructor must be done AFTER the class invariant ist established. Failing in doing so would allow global access to an invalid instance which happens more often then one would think.
+ 2. It combines accessibility management with lifetime management which is exactly what we find in the classical singleton and therefore what brings back most of its drawbacks.
  
- ## Use Queuing for all Global Access during initialization
+ For this reason there is a helper class.
  
+ ## When to use Delayed Access
+The mechanism of [Delayed Access](#delayed-access) should be used wherever access to global instances could fail due to unfavorable construction sequence of global instances. It is especially usefull in cases where a class depends on more than one one global instance:
+
+```cpp
+struct Logger{
+  void log(const char* msg);
+};
+
+struct Database{
+  const char* readSettings();
+}
+
+struct Settings{
+
+ Settings(){ 
+   global::instance<Database>().visitIfNotNull(
+     [this](Database& db){
+        
+        this->setData(db.readSettings());
+     
+        global::instance<Logger>().visitIfNotNull(
+          [this](Logger& l){
+            
+            l.log("settings file found in database");
+         
+         });   
+ }
+
+};
+
+void main(){
+ Logger logger;                                                
+ global::InstanceRegistration<Logger> regL(&logger);           
+ Settings settings;                                            
+ global::InstanceRegistration<Settings> regS(&settings);       
+ Database db;                                                
+ global::InstanceRegistration<Database> regS(&db);       
+}
+```
+As can be seen in the example above, the constructor of `Settings` depends on more than one global instance namely `Database` and `Logger`. Resolving this by hand can be quite tedious since `Database` or `Logger` could as well be waiting for other global instances. Using [Delayed Access](#delayed-access) in a nested manner makes this problem rather elegant to solve.
+ 
+ ## Customization
+ Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized rather easily. For this see section [Under the Hood](#under-the-hood) below.
  
  # Under the Hood
