@@ -1,9 +1,9 @@
 # Overview
 The library improves the classical singleton pattern with respect to 
  - testing
- - controlling timepoint and seqence of object construction/destruction
- - providing constructor-arguments 
- - detecting access to destroyed instances
+ - control over timepoint and seqence of object construction/destruction
+ - control over constructor-arguments 
+ - access to destroyed instances detection
  
 This is achieved by decoupling instance access from the instance lifetime management. The following example illustrates the basic idea/usage:
 
@@ -24,21 +24,21 @@ void main(){
 }                                            // 4) 
 
 void bar() {
-    global::instance<A>()->foo();            // 3) access instance  'a' 
+    global::instance<A>()->foo();            // 3) prints "foo"
 }
 
 ```
 
-On line `1)` in the example above, instance `a` gets constructed as a regular object and is then on line `2)` made globally accessible. Then  on line `3)` instance `a` is accessed by function `bar()` via global access. On line `4)` instance `a` gets destructed, and before that happens it gets globally inaccessible due to the destruction of `reg` which is basically as a scoped registration. 
+On line `1)` in the example above, instance `a` gets constructed as a regular object and is then on line `2)` made globally accessible. Then  on line `3)` instance `a` is accessed by function `bar()` via global access. On line `4)` instance `a` gets destructed, and before that happens its made globally inaccessible by the destructor of `reg`.  In other words `InstanceRegistration` is in effect from its construction until the end of the scope. 
 
-The example above does not cover all aspectes there are to it. Not covered were aspects of 
+The example above does not cover all aspectes there are to it. Not covered were
  - [testing](#testing) 
  - [delayed access](#delayed-access) 
  - [invalid access detection](#invalid-access-detection)
  - [multiple instances of the same type](#multiple-instances-of-the-same-type)
  - [various aspects](#various-aspects)
  
- which will be discussed below.
+ which will be discussed in the linked sections below.
 
 # Status
 ## Tested on
@@ -57,40 +57,57 @@ The example above does not cover all aspectes there are to it. Not covered were 
 
 # Testing 
 There are two basic cases to be considered:
- 1. Testing a globally accessible class and 
- 2. Testing code that acesses global instances
+ 1. testing a globally accessible class and 
+ 2. testing code that accesses global instances.
 
 The first case is simple. As globally accessible classes are just regular classes they can be tested like a regular class.
 
-The second case requires some extra work. In order to test code that accesses global instances those instances usually need to be replaced for the duration of the test by mock-ups. The following example illustrates how this can be done:   
+The second case requires some extra work. An example for the second case would be:
 
 ```cpp
 struct A
 {
-    virtual int foo() { return system("rm /tmp/myfile"); }
+    virtual int foo() { return system("rm /tmp/myfile"); }      // 1) remove file
 };
+
+int bar(){                                                      // 2) to be tested
+
+    return global::instance<A>()->foo() ? 77 : 66;              // 3) access to a global instance 
+}  
+
+void bar_test(){                                                // 4) test of bar()
+
+    assert(bar() == 66);   
+}
+
+void main(){
+    A a;                                    
+    global::InstanceRegistration<A> reg(&a); 
+    bar_test();
+}  
+ 
+```
+The example above tests function `bar()` with actually removes the file `/tmp/myfile` caused by the call to `A::foo()` in line `3)`. One way of avoiding removing the file during the test would be to replace the instance returned by `global::instance<A>()` in line `3)` which is shown below:
+
+```cpp
 
 struct A_mock  : public A
 {
     int foo() override { return 0; }
 };
 
-int bar(){ 
-    return global::instance<A>()->foo() ? 77 : 66;              // 1) access to global instance of 
-}  
-
 void bar_test(){
 
-    A_mock a_mock;                                             // 2)
+    A_mock a_mock;                                           
 
-    global::ReplacingInstanceRegistration<A> reg(&a_mock);     // 3) temporarily make 'a-mock' globally accessible
+    global::ReplacingInstanceRegistration<A> reg(&a_mock);     // 5) temporarily redirect calls to global::instance<A>()
 
-    assert(bar() == 66);                                       // 4) test of function bar()
+    assert(bar() == 66);                                       // 6) call to bar()
     
-}                                                              // 5) undo of step 2) 
+}                                                             
 
 ```
-In the example above the function `bar()` is tested in line `4)`. It accesses in line `1)` a global instance of type `A` which will therefore be replaced in line `3)` by the instance `a_mock` for the duration of the test. Therefore during the call to `bar()` in line `4)` the function `A_mock::foo()` will be used, which does not exercise the syscall and merely returns `0`. 
+In the example above, `bar_test()` replaces the instance returned by `global::instance<A>()` in line `5)` before making the call to function `bar()` in line `6)`. Therefore the call to `bar()` in line `6)` will not remove the file `/tmp/myfile` which is the desired behaviour.    
 
 # Delayed Access
 On larger projects global instances depend on each other as shown in the following example:
@@ -125,11 +142,14 @@ void main(){
  global::InstanceRegistration<Settings> regS(&settings); 
 }
 ```
-In the example above the constructor of `Logger` uses in line `1)` the globally accessible instance of `Settings` and vice versa in line `2)`. Therefore either way one of the two instances will not be fully constructed upon access. The classical solution to this kind of problem would be to fall back to a 2 phase initialisation for global instances which is error prone und reduces readability².
+In the example above the constructor of `Logger` uses in line `1)` the globally accessible instance of `Settings` and in line `2)` vice versa. Therefore one of the two instances will not be fully constructed upon access. The solution to this kind of problem is a two phase initialisation which has a couple of problems:
+ - initialization code is split onto two or more methods
+ - state space about initialization state is increased  
+ - class internal knowledge like 'if class A is constrcuted then do b' might leak out
+ - fragility raises since implicit asumptions about initialization order are incorporated into code
 
-²In many cases program startup is split into multiple stages and the initialization code is dispersed. 
+All of these problems can be adressed by a queuing mechanism which allows to automatically execute initialization steps if they become applicable as shown in the example below: 
 
-With this library an alternative solution can chosen:
 ```cpp
 struct Logger{
 
@@ -249,3 +269,8 @@ void main(){
 While this is possible it is not recommended for the following 2 reasons:
  1. It is errorprone, since the registration in the constructor must be done after the class invariant ist established. Failing in doing so would allow to access an invalid global instance which happens more often then one would think!
  2. It combines accessibility management with lifetime management which is exactly what we find in the classical singleton and therefore what brings back some of its drawback.
+ 
+ ## Use Queuing for all Global Access during initialization
+ 
+ 
+ # Under the Hood
