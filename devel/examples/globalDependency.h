@@ -10,7 +10,7 @@ struct A
 {
     A();
     int val = 4;
-    global::InstanceRegistration<A> reg;
+    global::detail::InstanceRegistration<A> reg;
 };
 
 
@@ -18,7 +18,7 @@ struct B
 {
     B();
     int val = 5;
-    global::InstanceRegistration<B> reg;
+    global::detail::InstanceRegistration<B> reg;
 };
 
 

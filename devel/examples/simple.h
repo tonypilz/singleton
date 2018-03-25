@@ -17,7 +17,7 @@ void bar() {
 
 void main_(){
     A a;
-    global::InstanceRegistration<A> reg(&a); // make a globally accessible
+    global::detail::InstanceRegistration<A> reg(&a); // make a globally accessible
     bar();
 }
 

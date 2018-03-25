@@ -9,19 +9,19 @@ namespace startup{
 struct A
 {
     A():reg(this){}
-    global::InstanceRegistration<A> reg;
+    global::detail::InstanceRegistration<A> reg;
 };
 
 struct B
 {
     B():reg(this){}
-    global::InstanceRegistration<B> reg;
+    global::detail::InstanceRegistration<B> reg;
 };
 
 struct C
 {
     C():reg(this){}
-    global::InstanceRegistration<C> reg;
+    global::detail::InstanceRegistration<C> reg;
 };
 
 

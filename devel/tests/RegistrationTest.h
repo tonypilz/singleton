@@ -17,10 +17,10 @@ private slots:
     void leavingTheScopeOfASingleInstanceRegistrationDeregistersInstance();
     void leavingTheScopeOfASubSingleInstanceRegistrationDeregistersInstance();
 
-    void singleInstanceRegistrationAllowsOnlySingleRegistration();
+    void SingleInstanceRegistrationAllowsOnlySingleRegistration();
     void singleInstanceSubRegistrationAllowsOnlySingleRegistration();
 
-    void replacingInstanceRegistrationReplacesInstanceTemporarily();
+    void ReplacingInstanceRegistrationReplacesInstanceTemporarily();
     void replacingInstanceSubRegistrationReplacesInstanceTemporarily();
 
     void registrationsCanBeChanged();

@@ -13,7 +13,7 @@ void InstanceTest::aRegisteredInstanceIsAccessible()
 {
     A a;
 
-    InstanceRegistration<A> registration;
+    detail::InstanceRegistration<A> registration;
     registration(&a);
 
     QVERIFY(instance<A>()==&a);
@@ -28,7 +28,7 @@ void InstanceTest::anUnregisteredSubInstanceIsNotAccessible()
 {
     A a;
 
-    InstanceRegistration<A> registration;
+    detail::InstanceRegistration<A> registration;
     registration(&a);
 
     const bool def = instance<A,Sub>()!=nullptr;
@@ -38,7 +38,7 @@ void InstanceTest::anUnregisteredSubInstanceIsNotAccessible()
 void InstanceTest::aRegisteredSubInstanceIsAccessible()
 {
     A a;
-    InstanceRegistration<A,Sub> registration;
+    detail::InstanceRegistration<A,Sub> registration;
     registration(&a);
 
     const bool def = instance<A,Sub>()!=nullptr;
@@ -52,7 +52,7 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
     struct B : public A{ int x = val; };
     B b;
 
-    InstanceRegistration<A> registration(&b);
+    detail::InstanceRegistration<A> registration(&b);
 
     auto res = dynamic_cast<B*>(static_cast<A*>(instance<A>()));
 
@@ -68,7 +68,7 @@ void InstanceTest::aDerivedSubInstanceIsAccessibleWithoutSlicing()
 
     B b;
 
-    InstanceRegistration<A,Sub> registration(&b);
+    detail::InstanceRegistration<A,Sub> registration(&b);
 
     auto res = dynamic_cast<B*>(static_cast<A*>(instance<A,Sub>()));
 
@@ -123,7 +123,7 @@ void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
 void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
 {
     A a;
-    InstanceRegistration<A> registration(&a);
+    detail::InstanceRegistration<A> registration(&a);
 
     bool called = false;
     instance<A>().visitIfNotNull([&called,&a](A const&r){ called = true; QCOMPARE(&r,&a); });
@@ -134,7 +134,7 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
 void InstanceTest::functionWillBeCalledDirectlyIfSubInstanceDefined()
 {
     A a;
-    InstanceRegistration<A,Sub> registration(&a);
+    detail::InstanceRegistration<A,Sub> registration(&a);
 
     bool called = false;
     instance<A,Sub>().visitIfNotNull([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
@@ -170,7 +170,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
     instance<A>().visitIfNotNull([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
     QCOMPARE(called,false);
 
-    InstanceRegistration<A> registration(&a);
+    detail::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(called,true);
 }
@@ -184,7 +184,7 @@ void InstanceTest::functionWillBeCalledIfSubInstanceIsDefined()
 
     QCOMPARE(called,false);
 
-    InstanceRegistration<A,Sub> registration(&a);
+    detail::InstanceRegistration<A,Sub> registration(&a);
 
     QCOMPARE(called,true);
 }
@@ -195,7 +195,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
 
     bool called = false;
     {
-        InstanceRegistration<A> registration(&a);
+        detail::InstanceRegistration<A> registration(&a);
         instance<A>().visitIfNull([&called,&a](){ called = true; });
         QCOMPARE(called,false);
     }
@@ -209,7 +209,7 @@ void InstanceTest::functionWillBeCalledIfSubInstanceIsUndefined()
 
     bool called = false;
     {
-        InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A,Sub> registration(&a);
         instance<A,Sub>().visitIfNull([&called,&a](){ called = true; });
         QCOMPARE(called,false);
     }
@@ -221,7 +221,7 @@ void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
 {
     A a;
 
-    InstanceRegistration<A> registration(&a);
+    detail::InstanceRegistration<A> registration(&a);
 
     int callCount = 0;
     instance<A>().visitIfNotNull([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
@@ -229,7 +229,7 @@ void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
     QCOMPARE(callCount,1);
     A b;
 
-    ReplacingInstanceRegistration<A> registration1(&b);
+    detail::ReplacingInstanceRegistration<A> registration1(&b);
 
     QCOMPARE(callCount,1);
 }
@@ -241,12 +241,12 @@ void InstanceTest::functionWillBeCalledOnlyOnceIndirectly()
     int callCount = 0;
     instance<A>().visitIfNotNull([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
-    InstanceRegistration<A> registration(&a);
+    detail::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(callCount,1);
 
     A b;
-    ReplacingInstanceRegistration<A> registration1(&b);
+    detail::ReplacingInstanceRegistration<A> registration1(&b);
 
     QCOMPARE(callCount,1);
 }
@@ -255,7 +255,7 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
 {
     A a;
 
-    InstanceRegistration<A> registration(&a);
+    detail::InstanceRegistration<A> registration(&a);
 
     int funcCallCount = 0;
     int condCallCount = 0;
@@ -279,7 +279,7 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
-    InstanceRegistration<A> registration(&a);
+    detail::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(funcCallCount,1);
     QVERIFY(condCallCount>0);
@@ -289,7 +289,7 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
 {
     A a;
 
-    InstanceRegistration<A,Sub> registration(&a);
+    detail::InstanceRegistration<A,Sub> registration(&a);
 
     int funcCallCount = 0;
     int condCallCount = 0;
@@ -313,7 +313,7 @@ void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
-    InstanceRegistration<A,Sub> registration(&a);
+    detail::InstanceRegistration<A,Sub> registration(&a);
 
     QCOMPARE(funcCallCount,1);
     QVERIFY(condCallCount>0);
@@ -354,7 +354,7 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
 
     {
 
-        InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A,Sub> registration(&a);
 
         QCOMPARE(funcCallCount1,n);
         QCOMPARE(funcCallCount2,0);
@@ -390,7 +390,7 @@ void InstanceTest::recursiveQueuingWorks()
     QCOMPARE(funcCallCount2,0);
 
     {
-        InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A,Sub> registration(&a);
 
         QCOMPARE(funcCallCount1,1);
         QCOMPARE(funcCallCount2,0);
@@ -416,7 +416,7 @@ void InstanceTest::registerForDestructionWorks()
     QCOMPARE(funcCallCount,0);
 
     {
-        InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A,Sub> registration(&a);
         QCOMPARE(funcCallCount,0);
     }
 

@@ -7,6 +7,12 @@
 namespace global {
 
 
+class InstanceReplacementNotAllowed : public std::exception {};
+class RegisteringNullNotAllowed: public std::exception {};
+
+
+
+namespace detail {
 
 //replaces existing for the time it exised
 template<typename T, typename Sub = detail::staticValueSubDefault>
@@ -43,8 +49,6 @@ private:
 
 
 
-class InstanceReplacementNotAllowed : public std::exception {};
-class RegisteringNullNotAllowed: public std::exception {};
 
 
 
@@ -88,18 +92,20 @@ public:
 
 };
 
-//default sub type
-template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault >
-using RegisterdInstance = RegisterdInstanceT<InstanceRegistration, T, Sub, R>;
+} //detail
 
-template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault >
-using RRegisterdInstance = RegisterdInstanceT<ReplacingInstanceRegistration, T, Sub, R>;
+template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault>
+using Instance = detail::RegisterdInstanceT<detail::InstanceRegistration, T, Sub, R>;
 
-//default registration type
-template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
-using RegisterdInstanceS = RegisterdInstanceT<InstanceRegistration, T, Sub, R>;
+template<typename T, typename R = T, typename Sub = detail::staticValueSubDefault>
+using TestInstance = detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, T, Sub, R>;
 
-template<typename T, typename Sub = detail::staticValueSubDefault, typename R = T >
-using RRegisterdInstanceS = RegisterdInstanceT<ReplacingInstanceRegistration, T, Sub, R>;
+template<typename T, typename Sub, typename R = T>
+using SubInstance = detail::RegisterdInstanceT<detail::InstanceRegistration, T, Sub, R>;
+
+template<typename T, typename Sub, typename R = T>
+using SubTestInstance = detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, T, Sub, R>;
+
+
 
 }//global

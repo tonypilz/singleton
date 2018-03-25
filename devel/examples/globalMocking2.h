@@ -37,7 +37,7 @@ void testB(){
 
     A_mock a_mock;
 
-    global::ReplacingInstanceRegistration<A> reg(&a_mock); //temporarily make 'a_mock' globally accessible under 'A'
+    global::detail::ReplacingInstanceRegistration<A> reg(&a_mock); //temporarily make 'a_mock' globally accessible under 'A'
 
     B b;
 
@@ -48,7 +48,7 @@ void testB(){
 void main_mockable2(){
 
     A a;
-    global::InstanceRegistration<A> reg(&a); //make 'a' globally accessible
+    global::detail::InstanceRegistration<A> reg(&a); //make 'a' globally accessible
 
     B t;
 

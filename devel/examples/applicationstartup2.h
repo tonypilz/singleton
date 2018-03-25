@@ -14,11 +14,11 @@ void doStuff(){}
 void main_(){
 
     A a;
-    global::InstanceRegistration<A> regA(&a); // make 'a' globally accessible
+    global::detail::InstanceRegistration<A> regA(&a); // make 'a' globally accessible
     B b;
-    global::InstanceRegistration<B> regB(&b); // make 'b' globally accessible
+    global::detail::InstanceRegistration<B> regB(&b); // make 'b' globally accessible
     C c;
-    global::InstanceRegistration<C> regC(&c); // make 'c' globally accessible
+    global::detail::InstanceRegistration<C> regC(&c); // make 'c' globally accessible
 
     doStuff();
 
