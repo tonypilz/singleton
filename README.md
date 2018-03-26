@@ -44,21 +44,20 @@ The example above does not cover all aspectes there are to it. Not covered were
  - gcc-7.2.0
 
 ## Compiles Under
- - gcc-4.9.0 .. gcc-7.3
+ - gcc-4.7 .. gcc-7.3
  - clang 3.4 .. clang 6.0
  - icc-18
 
 The compiler flag `-std=c++11` is used
  
 ## Status
- - Implementation: complete (~200sloc)
+ - Implementation: complete (~200sloc - [see single header file](#global-instances-access/include/globalInstances.h))
  - Tests: complete
  - Documentation: complete
  
-Todos:
- - run static code analysis (clang, cppcheck)
- - run valgrind memcheck
- - run cpp
+### Todos:
+ - run static code analysis (clang static analyser, cppcheck)
+ - run dynamic code analysis (valgrind.memcheck, clang adress sanitizer)
 
 # Testing 
 There are two basic cases to be considered:
