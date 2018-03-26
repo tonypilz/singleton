@@ -8,7 +8,7 @@ The library improves the classical singleton pattern with respect to
 This is achieved by decoupling instance access from the instance lifetime management. The following example illustrates the basic idea/usage:
 
 ```cpp
-#include <src/InstanceRegistration.h>
+#include <globalInstances.h>
 
 void bar(); 
 
@@ -53,8 +53,12 @@ The compiler flag `-std=c++11` is used
 ## Status
  - Implementation: complete (~200sloc)
  - Tests: complete
- - Documentation: incomplete
-
+ - Documentation: complete
+ 
+Todos:
+ - run static code analysis (clang, cppcheck)
+ - run valgrind memcheck
+ - run cpp
 
 # Testing 
 There are two basic cases to be considered:
