@@ -195,7 +195,7 @@ public:
   virtual void deregisterInstance() {
     if (replacedInstance.isValueSet() == false)
       return; // noting to do
-    T *tmp = replacedInstance;
+    T *tmp = static_cast<T*>(replacedInstance);
     replacedInstance.unsetValue();
     instance<T, Sub>() = tmp; // possibly registers again
   }
