@@ -5,6 +5,7 @@ HEADERS += \
     $$PWD/ConditionalSingleShotOperations.h \
     $$PWD/NullptrAccessHandler.h \
     $$PWD/OptionalValue.h \
-    $$PWD/InstancePointer.h
+    $$PWD/InstancePointer.h \
+    $$PWD/globalInstances.h
 
 SOURCES +=

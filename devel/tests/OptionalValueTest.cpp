@@ -1,6 +1,6 @@
 #include "OptionalValueTest.h"
 
-#include <src/OptionalValue.h>
+#include <src/globalInstances.h>
 
 using global::detail::OptionalValue;
 using global::detail::InvalidRead;
@@ -21,7 +21,7 @@ void OptionalValueTest::accessingInvalidValueThrows()
 
      try{
         OptionalValue<A> a;
-        auto x = A(a);
+        static_cast<A>(a);
      }
     catch(InvalidRead const&){
         return;

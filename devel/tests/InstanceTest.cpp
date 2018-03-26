@@ -1,6 +1,6 @@
 #include "InstanceTest.h"
-#include <src/instance.h>
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
+#include <src/globalInstances.h>
 
 using namespace global;
 

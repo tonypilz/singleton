@@ -1,6 +1,6 @@
 #include "RegistrationTest.h"
-#include <src/instance.h>
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
+#include <src/globalInstances.h>
 
 RegistrationTest::RegistrationTest(QObject *parent) : QObject(parent)
 {

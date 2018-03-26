@@ -1,6 +1,6 @@
 #pragma once
 
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
 #include <iostream>
 
 namespace dependency {

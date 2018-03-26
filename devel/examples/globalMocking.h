@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
 #include <cassert>
 
 namespace globalMocking{

@@ -6,8 +6,8 @@
 #include <ratio>
 #include <iostream>
 #include <cassert>
-#include <src/instance.h>
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
+#include <src/globalInstances.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"
 

@@ -1,6 +1,6 @@
 #include "ConditionalSingleShotOperationsTest.h"
 
-#include <src/ConditionalSingleShotOperations.h>
+#include <src/globalInstances.h>
 
 using global::detail::ConditionalSingleShotOperations;
 

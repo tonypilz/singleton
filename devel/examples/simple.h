@@ -1,6 +1,6 @@
 #pragma once
 
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
 #include <iostream>
 
 namespace simple {
@@ -16,8 +16,7 @@ void bar() {
 }
 
 void main_(){
-    A a;
-    global::detail::InstanceRegistration<A> reg(&a); // make a globally accessible
+    global::Instance<A> a; // make a globally accessible
     bar();
 }
 

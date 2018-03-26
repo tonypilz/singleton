@@ -5,7 +5,7 @@
 #include "examples/globalMocking2.h"
 #include "examples/simple.h"
 #include "examples/globalDependency.h"
-#include <src/staticValue.h>
+#include <src/globalInstances.h>
 
 //#include "tools/SingleFileTester.h"
 //#include <tools/SingleFileGenerator.h>

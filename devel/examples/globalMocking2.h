@@ -1,7 +1,7 @@
 #pragma once
 
 #include <type_traits>
-#include <src/InstanceRegistration.h>
+#include <src/globalInstances.h>
 
 namespace globalMocking2{
 
@@ -12,7 +12,7 @@ struct A_actual
 };
 
 
-struct A_mock : public A
+struct A_mock : public A_actual
 {
     int foo(){ return 0; }
 };
