@@ -20,7 +20,7 @@ struct A
 void main(){
     global::Instance<A> a;                   // 1) construct instance of A and make it globally accessible
     bar();
-}                                            // 2) deregistration and destruction of 'a'
+}                                            // 2) deregistration and destruction of instance of 'A'
 
 void bar() {
     global::instance<A>()->foo();            // 3) prints "foo"
