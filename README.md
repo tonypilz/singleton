@@ -51,7 +51,7 @@ The example above does not cover all aspectes there are to it. Not covered were
 The compiler flag `-std=c++11` is used
  
 ## Status
- - Implementation: complete (~200sloc - [see single header file](global-instances-access/include/globalInstances.h))
+ - Implementation: complete (~200sloc - [see single header file](include/globalInstances.h))
  - Tests: complete
  - Documentation: complete
 
