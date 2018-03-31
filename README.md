@@ -1,228 +1,220 @@
 # Overview
-The library improves the classical singleton pattern with respect to 
- - testing
- - control over timepoint and seqence of object construction/destruction
- - control over constructor-arguments 
- - access to destroyed instances detection
- 
-This is achieved by decoupling instance access from the instance lifetime management. The following example illustrates the basic idea/usage:
+
+The library replaces the classical singleton. It allows the construction of and access to global instances. The difference is that [most of the drawbacks are avoided](#comparision-with-the-classical-singleton).
+
+The following example illustrates the main usage of the librabary. It shows how to construct a globally accessible instance of type `A`, getting access to it and how it is destructed.
 
 ```cpp
 #include <globalInstances.h>
 
-void bar(); 
-
-struct A
-{
-    void foo(){std::cout<<"foo\n";}
+struct A { 
+    void foo(){ std::cout<<"foo\n"; } 
 };
 
-void main(){
-    global::Instance<A> a;                   // 1) construct instance of A and make it globally accessible
-    bar();
-}                                            // 2) deregistration and destruction of instance of 'A'
+void bar() { 
+    global::instance<A>()->foo(); // access (prints "foo")
+} 
 
-void bar() {
-    global::instance<A>()->foo();            // 3) prints "foo"
-}
+void main(){
+    global::Instance<A> a;        // construct an make globally accessible
+    bar();
+}                                 // destruct
 
 ```
 
-On line `1)` in the example above, instance `a` gets constructed as a regular object and is made globally accessible. Then on line `3)` the instance of `A` is accessed by function `bar()` via global access. Finally on line `2)` the instance of `A` gets destructed, and before that happens it is made globally inaccessible. 
 
-The example above does not cover all aspectes there are to it. Not covered were
- - [testing](#testing) 
- - [delayed access](#delayed-access) 
- - [invalid access detection](#invalid-access-detection)
- - [multiple instances of the same type](#multiple-instances-of-the-same-type)
- - [various aspects](#various-aspects)
- 
- which will be discussed in the linked sections below.
+
+Besides the main usage above, there are some more advanced szenarios to be looked at: 
+ - [how to do testing](#how-to-do-testing) 
+ - [how to avoid two-phase initialization](#how-to-avoid-two-phase-initialization) 
+ - [how to use multiple instances of the same type](#how-to-use-multiple-instances-of-the-same-type)
+ - [how to handle invalid access](#how-to-handle-invalid-access)
+
+In the remainder of the document the library is discussed in more detail.
+
+ # Table of Contents
+
+<!-- TOC -->
+
+- [Overview](#overview)
+- [Status](#status)
+    - [Testing](#testing)
+    - [Compiler Support](#compiler-support)
+    - [Installation](#installation)
+- [Library Aspects](#library-aspects)
+    - [How to do Testing](#how-to-do-testing)
+    - [How to Avoid Two-Phase Initialization](#how-to-avoid-two-phase-initialization)
+    - [How to Use Multiple Instances of The Same Type](#how-to-use-multiple-instances-of-the-same-type)
+    - [How to Handle Invalid Access](#how-to-handle-invalid-access)
+    - [Various Aspects](#various-aspects)
+        - [Thread Savety](#thread-savety)
+        - [Static destruction](#static-destruction)
+        - [Customization](#customization)
+        - [Comparision with the classical singleton](#comparision-with-the-classical-singleton)
+- [Under the Hood](#under-the-hood)
+
+<!-- /TOC -->
 
 # Status
-## Tested on
- - gcc-7.2.0
+## Testing
 
-## Compiles Under
+All tests pass under gcc-7.2.0.
+
+## Compiler Support
+The library compiles under
  - gcc-4.7 .. gcc-7.3
  - clang 3.4 .. clang 6.0
  - icc-18
 
 The compiler flag `-std=c++11` is used
  
-## Status
- - Implementation: complete (~200sloc - [see single header file](include/globalInstances.h))
- - Tests: complete
- - Documentation: complete
+## Installation
 
-### Todos:
- - run static code analysis (clang static analyser, cppcheck)
- - run dynamic code analysis (valgrind.memcheck, clang adress sanitizer)
+just copy the single header file [globalInstances.h](include/globalInstances.h) (~200sloc) into the project and include it (see in the first example).
 
-# Testing 
+# Library Aspects
+## How to do Testing 
 There are two basic cases to be considered:
  1. testing a globally accessible class and 
  2. testing code that accesses global instances.
 
-The first case is simple. As globally accessible classes are just regular classes they can be tested like a regular class.
+The first case is simple. As globally accessible classes are just like regular classes they can be tested like them.
 
-The second case requires some extra work. An example for the second case would be:
+The second case requires some extra work which shall be illustrated by the following example. In it a function `bar_test()` is supposed to test a function `bar()` which accesses global data:
 
 ```cpp
 struct A
 {
-    virtual int foo() { return system("rm /tmp/myfile"); }      // 1) remove file
+    virtual int foo() { return system("rm /tmp/myfile"); } 
 };
 
-int bar(){                                                      // 2) to be tested
+int bar(){
 
-    return global::instance<A>()->foo() ? 77 : 66;              // 3) access to a global instance 
+    return global::instance<A>()->foo() ? 77 : 66;  // access a global instance 
 }  
 
-void bar_test(){                                                // 4) test of bar()
+void bar_test(){
 
-    assert(bar() == 66);   
+    assert(bar() == 66);                           // test
 }
 
-void main(){                           
+void main(){
     global::Instance<A> a;
     bar_test();
 }  
  
 ```
-The example above tests function `bar()` with actually removes the file `/tmp/myfile` caused by the call to `A::foo()` in line `3)`. One way of avoiding removing the file during the test would be to replace the instance returned by `global::instance<A>()` in line `3)` which is shown below:
+
+For beeing able to test function `bar()` properly, the globally accessed instance must be replaced by a mock for the duration of the test:
 
 ```cpp
 
-struct A_mock  : public A
+struct A_mock : public A
 {
     int foo() override { return 0; }
 };
 
 void bar_test(){
 
-    global::TestInstance<A,A_mock> a_mock;     // 5) temporarily replace the global instance
-                                               //    of 'A' by an instance of 'A_mock'
+    global::TestInstance<A,A_mock> a_mock;     // replace global instance of 'A' by 
+                                               // an instance of 'A_mock'
 
-    assert(bar() == 66);                       // 6) call to bar()
-}                                                             
+    assert(bar() == 66);
+}
 
 ```
-In the example above, `bar_test()` replaces the instance returned by `global::instance<A>()` in line `5)` before making the call to function `bar()` in line `6)`. Therefore the call to `bar()` in line `6)` will not remove the file `/tmp/myfile` which is the desired test-behaviour.    
 
-# Delayed Access
-On larger projects global instances depend on each other as shown in the following example:
+## How to Avoid Two-Phase Initialization
+On larger projects some of the global instances usually access each other during their construction. In the following example, a class `A` accesses a global instance of type `B` during its construction and vice versa:
+
 ```cpp
-struct Logger{
+struct A{
 
-  Logger(){
-     m_logLevel = global::instance<Settings>()->getLogLevel();   // 1)
+  A(){
+    global::instance<B>()->foo(); 
   }
 
-  void log(const char* msg);
-
-  int m_logLevel;
+  void bar();
 };
 
 
-struct Settings{
+struct B{
 
- Settings(){
-   if (readSettingsFile()==success)
-     global::instance<Logger>()->log("settings file found");  // 2)
+ B(){
+   global::instance<A>()->bar(); 
  }
  
- int getLogLevel();
+ void foo();
  
 };
 
 void main(){
                 
- global::Instance<Logger> logger;                             // 3) accesses settings
- global::Instance<Settings> settings; 
+ global::Instance<A> a;                           
+ global::Instance<B> b; 
  
 }
 ```
-In the example above the constructor of `Logger` uses in line `1)` the globally accessible instance of `Settings` and in line `2)` vice versa. Therefore one of the two instances will not be fully constructed upon access. The solution to this kind of problem is a two phase initialisation which has a couple of problems:
- - initialization code is split onto two or more methods
- - state space about initialization state is increased  
- - class internal knowledge like 'if class A is constrcuted then do b' might leak out
- - fragility raises since implicit assumptions about initialization order are embedded into the code
-
-All of these problems can be adressed by a queuing mechanism which allows to automatically execute initialization steps if global instances become accessible as shown in the example below: 
+This kind of dependency loop is usually resolved by introducing some form of init-function which is called later on after the construction of the depending instances is complete. This so called two-phase initialization can get quite complex and brittle on bigger projects and is best to be avoided by using the deferred invocation mechanism of the library. With this, the example above could look like that: 
 
 ```cpp
-struct Logger{
+struct A{
 
- Logger() {
-    global::instance<Settings>().visitIfNotNull(
-        [this](Settings& b){
-           m_logLevel = s.getLogLevel();                       // 1)
-        });             
+ A() {
+    global::instance<B>().visitIfNotNull(
+        [](B& b){
+           b.foo();            // defered until b is available
+        });
  }
 
- void log(const char* msg);
- 
- int m_logLevel;
+ void bar();
 };
 
 
-struct Settings{
+struct B{
 
- Settings(){ 
-   if (readSettingsFile())
-     global::instance<Logger>().visitIfNotNull(
-        [this](Logger& l){
-           l.log("settings file found");                       // 2)
+ B(){ 
+    global::instance<A>().visitIfNotNull(
+        [](A& a){
+           a.bar();            // defered until a is available
         });   
  }
- 
- bool readSettingsFile();
- int getLogLevel();
- 
+
+ void foo();
 };
 
 void main(){
 
- global::Instance<Logger> logger;                             // 3)
- global::Instance<Settings> settings;                         // 4)
+ global::Instance<A> a;
+ global::Instance<B> b;
  
 }
 ```
-In the example above all calls to `global::instance<T>().visitIfNotNull()` are deferred until the an instance of `T` becomes globally accessible. So constructing the `Logger` in line `3)` defers the call of line `1)` until `Settings` becomes globally accessible, which is in line `4)`. The construction of `Settings` in line `4)` makes a direct call in line `2)` to `Logger::log` since an instance of `Logger` is at that point already globally accessible due to line `3)`.
 
-# Invalid Access Detection
-The attempt to access a global instance without a prior registration will by default cause an exception to be thrown. This default behaviour can be changed as follows:
+Note that the order of construction of a and b can be changed without affecting the result. This is one of the advantages of this approach.
+
+Also note that defering calls can be interlaced which allows defering until multiple instances are available e.g. if a class `C` depends on `A` and `B`, this could be expressed as:
+
 ```cpp
+struct C{
 
-void main(){
+ C() {
+     global::instance<A>().visitIfNotNull(
+        [](A& a){
+             global::instance<B>().visitIfNotNull(
+                [](B& b){
+                   b.foo();            // defered until a AND b are available
+                });
+        });
+ }
 
- struct A{};
- 
- global::instance<A>().onNullPtrAccess = [](){ return new A(); };    // 1) change default behaviour
- 
- global::instance<A>();                                              // 2) invalid global access
+};
 
-}
 ```
-In the example above the invalid access in line `2)` causes a call to line `1)`, which returns a dummy instance to `A` instead of throwing an exception.
 
-Note that there can also be a customized global handler which is used if no local one (as customized in the example above) is available:
-```cpp
 
-void main(){
 
- struct A{};
- 
- global::onNullptrAccess() = [](){ throw "this is not good"; };
- 
- global::instance<A>();
-
-}
-```
-Note that since this handler is used for all types the handler cannot provide an alternative instance to be used to the caller. 
-
-# Multiple Instances of the Same Type
+## How to Use Multiple Instances of The Same Type
 The library supports providing access to multiple instances of the same type as shown below:
 
 ```cpp
@@ -239,103 +231,104 @@ void bar();
 
 void main(){
 
-    global::SubInstance<A,Red>   ar;     // 1)
-    global::SubInstance<A,Green> ag;     // 2)
-    global::SubInstance<A,Blue>  ab;     // 3)
+    global::SubInstance<A,Red>   ar;     // creates first instance of type A
+    global::SubInstance<A,Green> ag;     // creates second instance of type A
+    global::SubInstance<A,Blue>  ab;     // creates third instance of type A
  
     bar();
 }                                        
 
 void bar() {
-    global::instance<A,Blue>()->foo();   // 4)
+    global::instance<A,Blue>()->foo();   // accessing the third instance of type A
 }
 
 ```
 
-In the example above three instances are created and made globally accessible in lines `1)`-`3)`. The third instance is then accessed on line `4)`. 
+Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow accessing the instances via `global::instance<A,Index<4,6>>()`.
 
-Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow to access the instances via `global::instance<A,Index<4,6>>()`.
+## How to Handle Invalid Access
+The attempt to access a global instance without a prior registration will by default cause an exception to be thrown. This default behaviour can be changed as follows:
+```cpp
 
-# Various Aspects
+void main(){
+
+ struct A{ void foo(){} };
+ 
+ global::instance<A>().onNullPtrAccess =
+          [](){ return new A(); };         // define a custom behaviour on invalid access
+ 
+ global::instance<A>()->foo();             // invalid access
+
+}
+```
+In the example above a new dummy-instance is created and used during the invalid access  instead of throwing an exception.
+
+A second possiblity to change the default behaviour is shown in the following example:
+```cpp
+
+void main(){
+
+ struct A{ void foo(){} };
+ 
+ global::onNullptrAccess() = [](){ throw "this is not good"; };
+ 
+ global::instance<A>()->foo();
+
+}
+```
+The difference between both is that the first one is specific for type `A` and will be called first. If it is not defined the second handler is called, which handles errors for all types. So changing the second one will change the invalid access behaviour for all types which do not have a type-specific handler.
+
+And since the second hanlder is used for all types it cannot provide an alternative instance to be used by the caller. 
+
+## Various Aspects
 In this paragraph some minor aspects to using this library will be discussed.
 
-## Thread Savety
-This library is not threadsave. But in most cases, this is not a problem since registration/deregistration of global instances usually happens at the beginning and during shutdown which is usually done by a single thread. And in the time between calls to `global::instance<T>()` are constant and therefore thread save.
+### Thread Savety
+This library is not threadsave. But in most cases, this is not a problem since registration/deregistration of global instances usually happen at the beginning and during shutdown which is usually done by a single thread. And in the time between calls to `global::instance<T>()` are constant and therefore thread save.
 
-## Static destruction
-Since static variables are used to provide global instance access one should keep in mind that they run out of scope during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
+### Static destruction
+Since static variables are used to provide global instance access one should keep in mind that they will run out of scope during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
 
-## When to use Delayed Access
-The mechanism of [Delayed Access](#delayed-access) should be used whenever access to global instances could fail due to unfavorable construction sequence of global instances. It is especially usefull in cases where a class depends on more than one global instance:
-
-```cpp
-
-struct Logger{
-    void log(const char* msg);
-};
-
-struct Database{
-    const char* readSettings();
-}
-
-struct Settings{
-
-   Settings(){ 
-     global::instance<Database>().visitIfNotNull(
-       [this](Database& db){
-
-          this->setData(db.readSettings());
-
-          global::instance<Logger>().visitIfNotNull(
-            [this](Logger& l){
-
-              l.log("settings file found in database");
-
-           });   
-   }
-
-};
-
-void main(){        
-
-   global::Instance<Logger> logger;                                                    
-   global::Instance<Settings> settings;                                              
-   global::Instance<Database> db;     
  
-}
-```
-As can be seen in the example above, the constructor of `Settings` depends on more than one global instance namely `Database` and `Logger`. Resolving this by hand can be quite tedious since `Database` or `Logger` could as well be waiting for other global instances. Using [Delayed Access](#delayed-access) in a nested manner makes this an easy solvable problem.
- 
- ## Customization
+### Customization
  Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized easily. For more details see section [Under the Hood](#under-the-hood) below.
- 
- # Under the Hood
- 
- To understand how it works we have to take a closer look at the two central expressions from the first example:
-  - `global::instance<A>()->foo();` and
-  - `global::Instance<A> a;`
- 
-We begin with `global::instance<A>()->foo();`
 
-The expression `global::instance<A>()` is a regular function, which returns a reference to a globally accessible static object of type `InstancePointer<A*>`. This object is created the first time the method is called and it holds the pointer to the actual instance of `A` which should be accessed globally. The expression `global::instance<A>()->foo();` can therefore also be written as
+### Comparision with the classical singleton
+
+The library improves the classical singleton with respect to 
+ - testing
+ - control over timepoint and seqence of object construction/destruction
+ - control over constructor-arguments 
+ - two-phase initialization
+
+And although all four aspects could also be implemented in the context of the classical singleton, that implementation would be error prone and not easy read which makes it appear less favourable than the solutions offered by this library.
+ 
+# Under the Hood
+ 
+ In oder to get an idea how the library is implemented it is sufficient to take a closer look at the two main expressions:
+  - `global::instance<A>()` and
+  - `global::Instance<A>`
+ 
+We begin with the accessor function, which has the signature
 
 ```cpp
-InstancePointer<A*>& ref = global::instance<A>();
-ref->foo();
+detail::InstancePointer<A*>& instance();
 ```
 
-The class `InstancePointer<A*>` has its own the `operator ->` which returns a pointer to the last registered instance of type `A`. If none was registered then the respective error handlers will be called. The class `InstancePointer<A*>` also provides means to register operations which are called after the instance pointer to `A` changes which makes delayed access to `A` possible. 
+It returns a reference to a static object of type `InstancePointer<A*>`. This object is created the first time the method is called and it holds the pointer to the actual instance of `A` which is accessed by calling `operator->` on it. If no instance of `A` was registered before calling `operator->` the respective error handlers will be called upon calling  `operator->`. The class `InstancePointer<A*>` also provides means to register callable objects which are called after the instance pointer to `A` changes which allows for deferred calls to instances of `A`. 
 
-What we have not seen so far is how an instance of `A` gets registered to the static object of type `InstancePointer<A*>`. This is done by the second central expression `global::Instance<A> a;`. What happens here is that an object of type `RegisterdInstanceT`: 
+What we have not seen so far is how an instance of `A` gets registered to the static object of type `InstancePointer<A*>`. This is done by the second of the two main expressions, namely `global::Instance<A>`. This is actually just a type which looks like 
 
 ```cpp
-struct RegisterdInstanceT {
-    A a;
-    InstanceRegistration<A> reg;
-    RegisterdInstanceT() : a, reg(&a) {}
+template<typename T>
+struct Instance {
+    T a;
+    InstanceRegistration<T> reg;
+    Instance() : a, reg(&a) {}
 };
 ```
-is created which is an aggregate of two objects, the first beeing an instance `A` and the second beeing a scoped registration object. This object registers a given adress to an instance of `A` in its constructor and deregisteres it in its destructor. Register means here that the provided address of `A` is copied to the above mentioned globally accessible object of type `InstancePointer<A*>`. Deregister means here clearing the address copied before.   
 
-This concludes the basic mechanism. The rest of the functionality is a detail around the just described central mechanism, eg. error handling and checking. 
+Creating an instance of it first constructs an instance of `A` and then registers it by creating an instance of type `InstanceRegistration<T>`. Note that the destructor of `InstanceRegistration<T>` deregisters the instance of `A`. By register we mean that the address of the instance of a `A` is given to the respective static object of type `InstancePointer<A*>`. Likewise deregister means here clearing the respective address.   
+
+This concludes the description of the basic mechanism. The rest of the functionality is a detail around the just described central mechanism, eg. error handling and checking. 
 
