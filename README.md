@@ -433,11 +433,14 @@ The indicator instance of type `RunelevelX` is used here to indicate a certain p
 
 The library improves the classical singleton with respect to 
  - testing
- - control over timepoint and seqence of object construction/destruction
- - control over constructor-arguments 
- - two-phase initialization
+ - control over construction/destruction
+   - sequence (relative to other singletons)
+   - timepoint (within program eg within static initialization or below function `main()`)
+   - arguments to the constructor
+   - storage location (stack, heap, static storage)
+ - necessity of two-phase initialization
 
-And although all four aspects could also be implemented in the context of the classical singleton, that implementation would be error prone and not easy read which makes it appear less favourable than the solutions offered here.
+And although the aspects above could also be implemented/fixed in the context of the classical singleton, that implementation would be error prone and hard to read which makes it appear less favourable than the solutions advocated by this library.
 
 ### Comparision to Other Libraries
 
