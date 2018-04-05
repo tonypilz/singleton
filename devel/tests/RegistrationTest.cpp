@@ -217,4 +217,51 @@ void RegistrationTest::TestInstanceBasicallyWorksSub()
     QCOMPARE(val,4);
 }
 
+void RegistrationTest::InstanceWorksWithStdMap()
+{
+    struct Sub{};
+
+    struct A { int x; };
+
+    using Map = std::map<std::string,A>;
+    global::SubInstance<Map,Sub> a { Map{
+            {"hans", A{1}},
+            {"wurst",A{2}}}};
+
+    {
+        const auto val = global::instance<Map,Sub>()->find("hans")->second.x;
+        QCOMPARE(val,1);
+    }
+
+    {
+        const auto val = global::instance<Map,Sub>()->find("wurst")->second.x;
+        QCOMPARE(val,2);
+    }
+
+
+}
+
+
+struct AX{
+private:
+    AX(){}
+
+    template<
+            template<typename, typename> class,
+            typename ,
+            typename ,
+            typename >
+    friend class global::detail::RegisterdInstanceT;
+};
+
+
+void RegistrationTest::privateConstructorsCanBeUsed(){
+
+
+
+    struct Sub{};
+    global::SubInstance<AX,Sub> a;
+}
+
+
 

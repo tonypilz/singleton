@@ -58,6 +58,7 @@ private slots:
     void recursiveQueuingWorks();
     void registerForDestructionWorks();
 
+    void instanceRefWorks();
 
 };
 

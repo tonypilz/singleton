@@ -126,7 +126,7 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
     detail::InstanceRegistration<A> registration(&a);
 
     bool called = false;
-    instance<A>().visitIfNotNull([&called,&a](A const&r){ called = true; QCOMPARE(&r,&a); });
+    instance<A>().ifAvailable([&called,&a](A const&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,true);
 }
@@ -137,7 +137,7 @@ void InstanceTest::functionWillBeCalledDirectlyIfSubInstanceDefined()
     detail::InstanceRegistration<A,Sub> registration(&a);
 
     bool called = false;
-    instance<A,Sub>().visitIfNotNull([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    instance<A,Sub>().ifAvailable([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,true);
 }
@@ -147,7 +147,7 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceUndefined()
     A a;
 
     bool called = false;
-    instance<A>().visitIfNull([&called,&a](){ called = true;  });
+    instance<A>().ifUnavailable([&called,&a](){ called = true;  });
 
     QCOMPARE(called,true);
 }
@@ -157,7 +157,7 @@ void InstanceTest::functionWillBeCalledDirectlyIfSubInstanceUndefined()
     A a;
 
     bool called = false;
-    instance<A,Sub>().visitIfNull([&called,&a](){ called = true;  });
+    instance<A,Sub>().ifUnavailable([&called,&a](){ called = true;  });
 
     QCOMPARE(called,true);
 }
@@ -167,7 +167,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
     A a;
 
     bool called = false;
-    instance<A>().visitIfNotNull([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    instance<A>().ifAvailable([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
     QCOMPARE(called,false);
 
     detail::InstanceRegistration<A> registration(&a);
@@ -180,7 +180,7 @@ void InstanceTest::functionWillBeCalledIfSubInstanceIsDefined()
     A a;
 
     bool called = false;
-    instance<A,Sub>().visitIfNotNull([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
+    instance<A,Sub>().ifAvailable([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,false);
 
@@ -196,7 +196,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
     bool called = false;
     {
         detail::InstanceRegistration<A> registration(&a);
-        instance<A>().visitIfNull([&called,&a](){ called = true; });
+        instance<A>().ifUnavailable([&called,&a](){ called = true; });
         QCOMPARE(called,false);
     }
 
@@ -210,7 +210,7 @@ void InstanceTest::functionWillBeCalledIfSubInstanceIsUndefined()
     bool called = false;
     {
         detail::InstanceRegistration<A,Sub> registration(&a);
-        instance<A,Sub>().visitIfNull([&called,&a](){ called = true; });
+        instance<A,Sub>().ifUnavailable([&called,&a](){ called = true; });
         QCOMPARE(called,false);
     }
 
@@ -224,7 +224,7 @@ void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
     detail::InstanceRegistration<A> registration(&a);
 
     int callCount = 0;
-    instance<A>().visitIfNotNull([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
+    instance<A>().ifAvailable([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
     QCOMPARE(callCount,1);
     A b;
@@ -239,7 +239,7 @@ void InstanceTest::functionWillBeCalledOnlyOnceIndirectly()
     A a;
 
     int callCount = 0;
-    instance<A>().visitIfNotNull([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
+    instance<A>().ifAvailable([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
     detail::InstanceRegistration<A> registration(&a);
 
@@ -260,7 +260,7 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A>().visitIf(
+    instance<A>().ifAvailabilityChanged(
                 [&](A* const&p){ ++condCallCount; return p==&a;},
                 [&](A* const&r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -275,7 +275,7 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A>().visitIf(
+    instance<A>().ifAvailabilityChanged(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -294,7 +294,7 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A,Sub>().visitIf(
+    instance<A,Sub>().ifAvailabilityChanged(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -309,7 +309,7 @@ void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A,Sub>().visitIf(
+    instance<A,Sub>().ifAvailabilityChanged(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -340,8 +340,8 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
 
     const int n = 20;
     for(int i = 0;i<n;++i){
-        instance<A,Sub>().visitIf(c1,f1);
-        instance<A,Sub>().visitIf(c2,f2);
+        instance<A,Sub>().ifAvailabilityChanged(c1,f1);
+        instance<A,Sub>().ifAvailabilityChanged(c2,f2);
     }
 
     QCOMPARE(funcCallCount1,0);
@@ -376,10 +376,10 @@ void InstanceTest::recursiveQueuingWorks()
     bool cond1 = false;
     bool cond2 = false;
 
-    instance<A,Sub>().visitIf(
+    instance<A,Sub>().ifAvailabilityChanged(
                 [&](A*){ return cond1;},
                 [&](A*){ ++funcCallCount1;
-                        instance<A,Sub>().visitIf(
+                        instance<A,Sub>().ifAvailabilityChanged(
                                     [&](A*){ return cond2;},
                                     [&](A*){ ++funcCallCount2;});
                        });
@@ -408,8 +408,8 @@ void InstanceTest::registerForDestructionWorks()
 
     int funcCallCount = 0;
 
-    instance<A,Sub>().visitIfNotNull(
-                [&](A&){ instance<A,Sub>().visitIfNull(
+    instance<A,Sub>().ifAvailable(
+                [&](A&){ instance<A,Sub>().ifUnavailable(
                     [&](){ ++funcCallCount;});
                        });
 
@@ -423,5 +423,25 @@ void InstanceTest::registerForDestructionWorks()
     QCOMPARE(funcCallCount,1);
 }
 
+void InstanceTest::instanceRefWorks()
+{
 
+    struct Sub{};
+
+    struct A { int x; };
+
+    using Map = std::map<std::string,A>;
+    global::SubInstance<Map,Sub> a { Map{
+            {"hans", A{1}},
+            {"wurst",A{2}}}};
+
+
+
+    {
+        const auto val = global::instanceRef<Map,Sub>()["hans"].x;
+        QCOMPARE(val,1);
+    }
+
+
+}
 

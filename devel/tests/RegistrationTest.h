@@ -36,6 +36,10 @@ private slots:
     void TestInstanceBasicallyWorks();
     void TestInstanceBasicallyWorksSub();
 
+    void InstanceWorksWithStdMap();
+
+    void privateConstructorsCanBeUsed();
+
 
 };
 
