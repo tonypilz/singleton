@@ -331,6 +331,23 @@ struct A{
 
 private:
     A(){}
+    GLOBAL_INSTANCE_IS_FRIEND;
+};
+
+void main(){
+    global::Instance<A> a;  
+}
+```
+
+Unfortunately we cannot avoid a macro here since `global::Instance<A>` is a type-alias which cannot appear in friend declarations.
+
+Note that without the macro we would have to declare friendship as shown below: 
+
+```cpp
+struct A{
+
+private:
+    A(){}
 
     template< template<typename,typename>class,
               typename ,
@@ -343,8 +360,6 @@ void main(){
     global::Instance<A> a;  
 }
 ```
-
-Unfortunately we cannot avoid this rather ugly friendship declaration since `global::Instance<A>` is a type-alias which cannot appear in friend declarations.
 
 ### Program Startup/Shutdown Status 
 

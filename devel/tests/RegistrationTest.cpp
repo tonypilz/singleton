@@ -257,10 +257,21 @@ private:
 
 void RegistrationTest::privateConstructorsCanBeUsed(){
 
-
-
     struct Sub{};
     global::SubInstance<AX,Sub> a;
+}
+
+struct AY{
+private:
+    AY(){}
+    GLOBAL_INSTANCE_IS_FRIEND;
+};
+
+
+void RegistrationTest::privateConstructorsCanBeUsedWithMacro()
+{
+    struct Sub{};
+    global::SubInstance<AY,Sub> a;
 }
 
 

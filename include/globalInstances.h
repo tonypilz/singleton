@@ -266,5 +266,8 @@ template <typename R, typename Sub, typename T = R>
 using SubTestInstance =
     detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, R, Sub,
                                T>;
+#define GLOBAL_INSTANCE_IS_FRIEND                                              \
+  template <template <typename, typename> class, typename, typename, typename> \
+  friend class ::global::detail::RegisterdInstanceT
 
 } // namespace global

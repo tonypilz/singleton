@@ -39,6 +39,10 @@ private slots:
     void InstanceWorksWithStdMap();
 
     void privateConstructorsCanBeUsed();
+    void privateConstructorsCanBeUsedWithMacro();
+
+
+
 
 
 };
