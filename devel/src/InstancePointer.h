@@ -40,29 +40,29 @@ public:
         return val;
     }
 
-    Ptr ptr() const{
+    Ptr rawPtr() const{
         return val;
     }
 
 
     template<typename Cond, typename Func>
-    void visitIf(Cond c, Func func){
+    void ifAvailabilityChanged(Cond c, Func func){
         if (c(val)) {func(val); return;} // direct call if condition is met!s
         changeOperations.add([c,func](Ptr const& t){ if (c(t)) {func(t); return true;} return false;});
     }
 
     template<typename Func >
-    void visitIfNotNull(Func func){
+    void ifAvailable(Func func){
         auto notNull = [](Ptr const& t){return t!=nullptr;};
         auto pfunc = [func](Ptr const& t){if (t==nullptr) throw NullptrAccess(); func(*t);};
-        visitIf(notNull,pfunc);
+        ifAvailabilityChanged(notNull,pfunc);
     }
 
     template<typename Func >
-    void visitIfNull(Func func){
+    void ifUnavailable(Func func){
         auto null = [](Ptr const& t){return t==nullptr;};
         auto pfunc = [func](Ptr const& t){if (t!=nullptr) throw UnexpectedNonNullInstance(); func();};
-        visitIf(null,pfunc);
+        ifAvailabilityChanged(null,pfunc);
     }
 
     NullPtrAccessHandler onNullPtrAccess;

@@ -21,12 +21,12 @@ struct B
 
 
 A::A(){
-    global::instance<B>().visitIfNotNull([this](B& b){
+    global::instance<B>().ifAvailable([this](B& b){
         std::cout<<"a is using value of b:" << b.val << "\n";});
 }
 
 B::B(){
-    global::instance<A>().visitIfNotNull([this](A& a){
+    global::instance<A>().ifAvailable([this](A& a){
         std::cout<<"b is using value of a:" << a.val << "\n";});
 }
 

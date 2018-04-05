@@ -27,7 +27,7 @@ public:
 
     virtual void registerInstance(T* t){
         deregisterInstance();
-        replacedInstance = instance<T,Sub>().ptr();
+        replacedInstance = instance<T,Sub>().rawPtr();
         instance<T,Sub>() = t; //possibly deregisters again
     }
 

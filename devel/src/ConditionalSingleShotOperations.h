@@ -21,7 +21,7 @@ public:
         auto copy = std::move(operations);
         operations.clear();
         for(auto const& op:copy){
-            const bool executed = op(t); //this might change the variable 'operations'!
+            const bool executed = op(t); //this might change the variable 'operations', but only inverse operations since direct operations will be executed instantly!
             if (!executed) operations.push_back(std::move(op));
         }
     }
