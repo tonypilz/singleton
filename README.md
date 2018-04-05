@@ -2,7 +2,7 @@
 
 The library allows the construction of and access to global instances which makes it an alternative to the classical singleton. The advantage is that [most of the drawbacks of the singleton are avoided](#comparision-with-the-classical-singleton).
 
-The following example illustrates the main usage of the librabary. It shows how to construct an instance of type `A`, make it globally accessible, accessing and destructing it.
+The following example illustrates the main usage of the library. It shows how to construct an instance of type `A`, make it globally accessible, accessing and destructing it.
 
 ```cpp
 #include <globalInstances.h>
@@ -50,9 +50,13 @@ The remainder of the document discusses the library in more detail.
     - [How to Handle Invalid Access](#how-to-handle-invalid-access)
     - [Various Aspects](#various-aspects)
         - [Thread Savety](#thread-savety)
-        - [Static destruction](#static-destruction)
+        - [Behaviour on Exceptions](#behaviour-on-exceptions)
+        - [Static Destruction](#static-destruction)
+        - [Private Constructors](#private-constructors)
+        - [Program Startup/Shutdown Status](#program-startupshutdown-status)
         - [Customizing the Library](#customizing-the-library)
         - [Comparision with the Classical Singleton](#comparision-with-the-classical-singleton)
+        - [Comparision to Other Libraries](#comparision-to-other-libraries)
 - [Under the Hood](#under-the-hood)
 
 <!-- /TOC -->
@@ -103,7 +107,6 @@ void main(){
 Let's assume we want to test function `bar()` in without actually deleting the file `/tmp/myfile`. This can be achieved by replacing the instance of `A` by a mock for the duration of the test. The additional test code would look like this:
 
 ```cpp
-
 struct A_mock : public A
 {
     int foo() override { return 0; }
@@ -157,7 +160,7 @@ This kind of dependency loop is usually resolved by introducing some form of ini
 struct A{
 
  A() {
-    global::instance<B>().visitIfNotNull(
+    global::instance<B>().ifAvailable(
         [](B& b){
            b.foo();            // defered until b is available
         });
@@ -170,7 +173,7 @@ struct A{
 struct B{
 
  B(){ 
-    global::instance<A>().visitIfNotNull(
+    global::instance<A>().ifAvailable(
         [](A& a){
            a.bar();            // defered until a is available
         });   
@@ -195,9 +198,9 @@ Also note that defering calls can be nested which allows deferring execution unt
 struct C{
 
  C() {
-     global::instance<A>().visitIfNotNull(
+     global::instance<A>().ifAvailable(
         [](A& a){
-             global::instance<B>().visitIfNotNull(
+             global::instance<B>().ifAvailable(
                 [](B& b){
                    b.foo();            // defered until a AND b are available
                 });
@@ -214,7 +217,7 @@ Arguments can be passed to the constructor just like regular ones:
 
 ```cpp
 struct A { 
-    A(int i, std::string j){}
+    A(int, std::string){}
 };
 
 void main(){
@@ -256,7 +259,6 @@ Note: The access to instances of the same type can be extended to e.g. multidime
 ## How to Handle Invalid Access
 The attempt to access a global instance without a prior registration will by default cause an exception to be thrown. This default behaviour can be changed as follows:
 ```cpp
-
 void main(){
 
  struct A{ void foo(){} };
@@ -272,7 +274,6 @@ In the example above a new dummy-instance is created and used during the invalid
 
 A second possiblity to change the default behaviour is shown in the following example:
 ```cpp
-
 void main(){
 
  struct A{ void foo(){} };
@@ -291,12 +292,125 @@ And since the second hanlder is used for all types it cannot provide an alternat
 In this paragraph some minor aspects to using this library will be discussed.
 
 ### Thread Savety
-This library is not threadsave. But in most cases, this is not a problem since registration/deregistration of global instances usually happen at the beginning and during shutdown which is usually done by a single thread. And in the meantime calls to `global::instance<T>()` are thread save since they do not change data.
+This library does not employ synchnization primitives like mutexes. Therefore it is generally not thread-save. However in most cases, this is not a problem since registration/deregistration of global instances usually happens at the beginning and during program exit which is almost always done by a single thread. And in between all calls to `global::instance<T>()` are thread-save since no data is beeing changed:
 
-### Static destruction
+```cpp
+struct A{ void foo(); };
+
+void main(){
+
+ // single threaded construction
+ global::Instance<A> a;  
+ 
+ // multithreaded access to global::instance<A>() is fine
+ std::thread t1([](){ global::instance<A>()->foo(); });
+ std::thread t2([](){ global::instance<A>()->foo(); });
+
+ t1.join();
+ t2.join();
+
+ // single threaded destruction
+ 
+}
+```
+
+### Behaviour on Exceptions
+
+If `A` throws an exceptions during construction of `global::Instance<A> a;`, it will not be made globally available and therefore no deferred calls will be triggered.
+
+If a deferred call throws, some of the unexecuted deferred calls will be discarded and therefore never be executed. 
+
+### Static Destruction
 Since static variables are used to provide global instance access one should keep in mind that they will be destroyed during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
 
- 
+### Private Constructors
+In order to be able to declare constructors private, one has to declare friendship as shown in the example below:
+
+```cpp
+struct A{
+
+private:
+    A(){}
+
+    template< template<typename,typename>class,
+              typename ,
+              typename ,
+              typename >
+    friend class global::detail::RegisterdInstanceT;
+};
+
+void main(){
+    global::Instance<A> a;  
+}
+```
+
+Unfortunately we cannot avoid this rather ugly friendship declaration since `global::Instance<A>` is a type-alias which cannot appear in friend declarations.
+
+### Program Startup/Shutdown Status 
+
+On bigger projects some information about the startup and shutdown state are usually desirable. This can be achieved by adding indicator instances:
+
+```cpp
+struct A{};
+struct B{};
+struct C{};
+struct D{};
+struct {};
+
+class GlobalInstances
+{
+    global::Instance<A> a;
+    global::Instance<B> b;
+    global::Instance<RunlevelX> runlevelX;
+    global::Instance<C> c;
+    global::Instance<D> d;
+}
+
+void main(){
+
+    bar();
+
+    global::instance<GlobalInstances>().ifAvailable(
+        [](GlobalInstances&){
+           std::cout<<"All global instances constructed\n";
+        });
+
+    global::instance<RunlevelX>().ifAvailable(
+        [](RunlevelX&){
+           std::cout<<"RunlevelX entered\n";
+        });
+
+    global::Instance<GlobalInstances> g;
+
+    // all instances constructed, main loop can be entered
+
+    bar();
+
+    mainLoop();
+
+    global::instance<GlobalInstances>().ifUnavailable(
+        [](GlobalInstances&){
+           std::cout<<"Global instances about to be destructed\n";
+        });
+
+    global::instance<RunlevelX>().ifUnavailable(
+        [](RunlevelX&){
+           std::cout<<"RunlevelX left\n";
+        });
+}
+
+void bar() {
+    bool v = global::instance<GlobalInstances>();
+    bool x =  global::instance<RunlevelX>();
+    std::cout << "All global instances available: " << v 
+              << ", runlevel X entered: " << x << "\n";
+}
+
+```
+As can be seen in the example, the instance of `GlobalInstances` has two purposes. First, constructing and destructing all global instances and second, serve as indicater if all global instances have been fully constructed. It also helps to avoid cluttering the main function with the construction code of the global instances.
+
+The indicator instance of type `RunelevelX` is used here to indicate a certain program startup and shutdown state. Therefore it can be used to trigger a two phase initialization. However, as discussed in [this section](#how-to-avoid-two-phase-initialization), a two phase initialization should be avoided if possible which is why there should rarely be the need for one. 
+
 ### Customizing the Library
  Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
 
@@ -309,7 +423,37 @@ The library improves the classical singleton with respect to
  - two-phase initialization
 
 And although all four aspects could also be implemented in the context of the classical singleton, that implementation would be error prone and not easy read which makes it appear less favourable than the solutions offered here.
- 
+
+### Comparision to Other Libraries
+
+Most singleton libraries found on github are demos/examples or private implementations, except:
+
+ - [https://github.com/herpec-j/Singleton](https://github.com/herpec-j/Singleton)
+   - Implementation of the classical singleton using CRTP  
+   - Not sure if implemenation is correct concerning constructor arguments (tests dont cover the case)
+   - Uses custom implementaiton of spinlock
+ - [https://github.com/ugriffin/VSSynthesiseSingleton](https://github.com/ugriffin/VSSynthesiseSingleton)
+   - Implementation of the classical singleton employing macros to generate singleton code  
+ - [https://github.com/xytis/typedef-singleton](https://github.com/xytis/typedef-singleton)
+   - Behaves like a classical singleton though not implemented as one
+   - No constructor arguments can be provided
+ - [https://github.com/AlexWorx/ALib-Singleton](https://github.com/AlexWorx/ALib-Singleton)
+   - Implementation of the classical singleton using CRTP
+   - No constructor arguments can be provided
+   - Singleton is constructed on the heap
+   - Any singleton class is forced to have a virtual destructor
+ - [https://github.com/FlorianWolters/cpp-component-util-singleton](https://github.com/FlorianWolters/cpp-component-util-singleton)
+   - Implementation of the classical singleton using CRTP
+ - [https://github.com/zyf3883310/C-11-Thread-Safe-Singleton](https://github.com/zyf3883310/C-11-Thread-Safe-Singleton)
+   - Implementation of the classical singleton using template class
+ - [https://github.com/chenokay/selib](https://github.com/chenokay/selib)
+   - Implementation of the classical singleton using template class
+
+All of the above listed implementations basically reproduce the classical singleton with minor to no improvements / changes. Therefore [the basic problems of the classical singleton](#comparision-with-the-classical-singleton) persist.
+
+CRTP = curiously recurring template pattern
+
+
 # Under the Hood
  
  In oder to get an idea how the library is implemented it is sufficient to take a closer look at the two main expressions:
