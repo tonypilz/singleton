@@ -1,8 +1,8 @@
 # Overview
 
-The library replaces the classical singleton. It allows the construction of and access to global instances. The difference is that [most of the drawbacks are avoided](#comparision-with-the-classical-singleton).
+The library allows the construction of and access to global instances which makes it an an alternative to the classical singleton. The advantage is that [most of the drawbacks of the singleton are avoided](#comparision-with-the-classical-singleton).
 
-The following example illustrates the main usage of the librabary. It shows how to construct a globally accessible instance of type `A`, getting access to it and how it is destructed.
+The following example illustrates the main usage of the librabary. It shows how to construct an instance of type `A`, make it globally accessible, accessing and destructing it.
 
 ```cpp
 #include <globalInstances.h>
@@ -24,13 +24,14 @@ void main(){
 
 
 
-Besides the main usage above, there are some more advanced szenarios to be looked at: 
+Besides the main usage above, the following aspects are also covered by this library: 
  - [how to do testing](#how-to-do-testing) 
  - [how to avoid two-phase initialization](#how-to-avoid-two-phase-initialization) 
  - [how to use multiple instances of the same type](#how-to-use-multiple-instances-of-the-same-type)
  - [how to handle invalid access](#how-to-handle-invalid-access)
+ - [how to pass arguments to the constructor](#how-to-pass-arguments-to-the-constructor)
 
-In the remainder of the document the library is discussed in more detail.
+The remainder of the document discusses the library in more detail.
 
  # Table of Contents
 
@@ -44,13 +45,14 @@ In the remainder of the document the library is discussed in more detail.
 - [Library Aspects](#library-aspects)
     - [How to do Testing](#how-to-do-testing)
     - [How to Avoid Two-Phase Initialization](#how-to-avoid-two-phase-initialization)
-    - [How to Use Multiple Instances of The Same Type](#how-to-use-multiple-instances-of-the-same-type)
+    - [How to Pass Arguments to the Constructor](#how-to-pass-arguments-to-the-constructor)
+    - [How to use Multiple Instances of the Same Type](#how-to-use-multiple-instances-of-the-same-type)
     - [How to Handle Invalid Access](#how-to-handle-invalid-access)
     - [Various Aspects](#various-aspects)
         - [Thread Savety](#thread-savety)
         - [Static destruction](#static-destruction)
-        - [Customization](#customization)
-        - [Comparision with the classical singleton](#comparision-with-the-classical-singleton)
+        - [Customizing the Library](#customizing-the-library)
+        - [Comparision with the Classical Singleton](#comparision-with-the-classical-singleton)
 - [Under the Hood](#under-the-hood)
 
 <!-- /TOC -->
@@ -75,12 +77,12 @@ just copy the single header file [globalInstances.h](include/globalInstances.h) 
 # Library Aspects
 ## How to do Testing 
 There are two basic cases to be considered:
- 1. testing a globally accessible class and 
- 2. testing code that accesses global instances.
+ 1. test a globally accessible class and 
+ 2. test code that accesses global instances.
 
-The first case is simple. As globally accessible classes are just like regular classes they can be tested like them.
+The first case is simple. As globally accessible classes are just regular classes they can be tested like them.
 
-The second case requires some extra work which shall be illustrated by the following example. In it a function `bar_test()` is supposed to test a function `bar()` which accesses global data:
+The second case requires some extra work which is illustrated by the following example:
 
 ```cpp
 struct A
@@ -89,23 +91,16 @@ struct A
 };
 
 int bar(){
-
     return global::instance<A>()->foo() ? 77 : 66;  // access a global instance 
 }  
 
-void bar_test(){
-
-    assert(bar() == 66);                           // test
-}
-
 void main(){
     global::Instance<A> a;
-    bar_test();
+    bar();
 }  
  
 ```
-
-For beeing able to test function `bar()` properly, the globally accessed instance must be replaced by a mock for the duration of the test:
+Let's assume we want to test function `bar()` in without actually deleting the file `/tmp/myfile`. This can be achieved by replacing the instance of `A` by a mock for the duration of the test. The additional test code would look like this:
 
 ```cpp
 
@@ -118,14 +113,15 @@ void bar_test(){
 
     global::TestInstance<A,A_mock> a_mock;     // replace global instance of 'A' by 
                                                // an instance of 'A_mock'
-
     assert(bar() == 66);
-}
+}                                              // undo replace
 
 ```
 
+So for the scope of `bar_test()` all calls to `global::instance<A>()` are directed to an instance of `A_mock`. After the end of the scope of `bar_test()` calls to  `global::instance<A>()` will end up in the original instance of `A`.
+
 ## How to Avoid Two-Phase Initialization
-On larger projects some of the global instances usually access each other during their construction. In the following example, a class `A` accesses a global instance of type `B` during its construction and vice versa:
+On larger projects some of the global instances usually access each other during their construction. In the following example, a class `A` accesses globally an instance of type `B` during its construction and vice versa:
 
 ```cpp
 struct A{
@@ -155,7 +151,7 @@ void main(){
  
 }
 ```
-This kind of dependency loop is usually resolved by introducing some form of init-function which is called later on after the construction of the depending instances is complete. This so called two-phase initialization can get quite complex and brittle on bigger projects and is best to be avoided by using the deferred invocation mechanism of the library. With this, the example above could look like that: 
+This kind of dependency loop is usually resolved by introducing some form of init-function which is called later on after the construction of the depending instances is complete. This so called two-phase initialization can get quite complex and brittle on bigger projects and is best to be avoided by using a deferred invocation mechanism provided by the library. With this, the example above could look like that: 
 
 ```cpp
 struct A{
@@ -191,9 +187,9 @@ void main(){
 }
 ```
 
-Note that the order of construction of a and b can be changed without affecting the result. This is one of the advantages of this approach.
+Note that the order of construction of `a` and `b` can be changed without affecting the result. This is one of the advantages of this approach.
 
-Also note that defering calls can be interlaced which allows defering until multiple instances are available e.g. if a class `C` depends on `A` and `B`, this could be expressed as:
+Also note that defering calls can be interlaced which allows deferring execution until multiple instances are available e.g. if a class `C` depends on `A` __and__ `B`, this could be expressed as:
 
 ```cpp
 struct C{
@@ -212,9 +208,20 @@ struct C{
 
 ```
 
+## How to Pass Arguments to the Constructor
 
+Arguments can be passed to the constructor just like regular ones:
 
-## How to Use Multiple Instances of The Same Type
+```cpp
+struct A { 
+    A(int i, std::string j){}
+};
+
+void main(){
+    global::Instance<A> a(2,"hello");  
+}
+```
+## How to use Multiple Instances of the Same Type
 The library supports providing access to multiple instances of the same type as shown below:
 
 ```cpp
@@ -284,16 +291,16 @@ And since the second hanlder is used for all types it cannot provide an alternat
 In this paragraph some minor aspects to using this library will be discussed.
 
 ### Thread Savety
-This library is not threadsave. But in most cases, this is not a problem since registration/deregistration of global instances usually happen at the beginning and during shutdown which is usually done by a single thread. And in the time between calls to `global::instance<T>()` are constant and therefore thread save.
+This library is not threadsave. But in most cases, this is not a problem since registration/deregistration of global instances usually happen at the beginning and during shutdown which is usually done by a single thread. And in the meantime calls to `global::instance<T>()` are thread save since they do not change data.
 
 ### Static destruction
-Since static variables are used to provide global instance access one should keep in mind that they will run out of scope during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
+Since static variables are used to provide global instance access one should keep in mind that they will be destroyed during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
 
  
-### Customization
- Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized easily. For more details see section [Under the Hood](#under-the-hood) below.
+### Customizing the Library
+ Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
 
-### Comparision with the classical singleton
+### Comparision with the Classical Singleton
 
 The library improves the classical singleton with respect to 
  - testing
@@ -301,7 +308,7 @@ The library improves the classical singleton with respect to
  - control over constructor-arguments 
  - two-phase initialization
 
-And although all four aspects could also be implemented in the context of the classical singleton, that implementation would be error prone and not easy read which makes it appear less favourable than the solutions offered by this library.
+And although all four aspects could also be implemented in the context of the classical singleton, that implementation would be error prone and not easy read which makes it appear less favourable than the solutions offered here.
  
 # Under the Hood
  
@@ -315,20 +322,21 @@ We begin with the accessor function, which has the signature
 detail::InstancePointer<A*>& instance();
 ```
 
-It returns a reference to a static object of type `InstancePointer<A*>`. This object is created the first time the method is called and it holds the pointer to the actual instance of `A` which is accessed by calling `operator->` on it. If no instance of `A` was registered before calling `operator->` the respective error handlers will be called upon calling  `operator->`. The class `InstancePointer<A*>` also provides means to register callable objects which are called after the instance pointer to `A` changes which allows for deferred calls to instances of `A`. 
+It returns a reference to a static object of type `InstancePointer<A*>` which is created on the first time the method is called. The object holds the pointer to the actual instance of type `A` which is accessed by calling `operator->` on it. If no instance of type `A` was registered before calling `operator->` the respective error handlers will be triggered. The class `InstancePointer<A*>` also provides means to register callable objects which are called if the pointer to the actual instance changes. This enables the deferred calling mechanism. 
 
-What we have not seen so far is how an instance of `A` gets registered to the static object of type `InstancePointer<A*>`. This is done by the second of the two main expressions, namely `global::Instance<A>`. This is actually just a type which looks like 
+What we have not seen so far is how an instance of type `A` gets registered to the static object of type `InstancePointer<A*>`. This is done by the second of the two main expressions, namely `global::Instance<A>` which constructs an instance of the following type:  
 
 ```cpp
-template<typename T>
-struct Instance {
-    T a;
-    InstanceRegistration<T> reg;
+struct Instance<A> {
+
+    A a;
+    InstanceRegistration<A> reg;
+    
     Instance() : a, reg(&a) {}
 };
 ```
 
-Creating an instance of it first constructs an instance of `A` and then registers it by creating an instance of type `InstanceRegistration<T>`. Note that the destructor of `InstanceRegistration<T>` deregisters the instance of `A`. By register we mean that the address of the instance of a `A` is given to the respective static object of type `InstancePointer<A*>`. Likewise deregister means here clearing the respective address.   
+As we can see `Instance<A>` contains the actualy instance `a` of type `A` as well as a registration object `reg` of type `InstanceRegistration<A>`. A registration object registers a given object pointer during its construction and deregisters it during its destruction. Thus `a` gets registered by `reg` after beeing constructed by `Instance<A>`. By register we mean that the address of the instance of a `A` is given to the respective static object of type `InstancePointer<A*>`. Likewise deregister means here clearing the respective address.   
 
 This concludes the description of the basic mechanism. The rest of the functionality is a detail around the just described central mechanism, eg. error handling and checking. 
 
