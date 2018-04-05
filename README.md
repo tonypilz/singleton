@@ -1,6 +1,6 @@
 # Overview
 
-The library allows the construction of and access to global instances which makes it an an alternative to the classical singleton. The advantage is that [most of the drawbacks of the singleton are avoided](#comparision-with-the-classical-singleton).
+The library allows the construction of and access to global instances which makes it an alternative to the classical singleton. The advantage is that [most of the drawbacks of the singleton are avoided](#comparision-with-the-classical-singleton).
 
 The following example illustrates the main usage of the librabary. It shows how to construct an instance of type `A`, make it globally accessible, accessing and destructing it.
 
@@ -146,12 +146,12 @@ struct B{
 
 void main(){
                 
- global::Instance<A> a;                           
- global::Instance<B> b; 
+ global::Instance<A> a;     // throws since no instance of B available yet
+ global::Instance<B> b;     
  
 }
 ```
-This kind of dependency loop is usually resolved by introducing some form of init-function which is called later on after the construction of the depending instances is complete. This so called two-phase initialization can get quite complex and brittle on bigger projects and is best to be avoided by using a deferred invocation mechanism provided by the library. With this, the example above could look like that: 
+This kind of dependency loop is usually resolved by introducing some form of init-function which is called later on after the construction of the depending instances is complete. This so called two-phase initialization can get quite complex and brittle on bigger projects and can be avoided by using the deferred invocation mechanism provided by the library. With it, a non-throwing version of the example above could look like that: 
 
 ```cpp
 struct A{
@@ -189,7 +189,7 @@ void main(){
 
 Note that the order of construction of `a` and `b` can be changed without affecting the result. This is one of the advantages of this approach.
 
-Also note that defering calls can be interlaced which allows deferring execution until multiple instances are available e.g. if a class `C` depends on `A` __and__ `B`, this could be expressed as:
+Also note that defering calls can be nested which allows deferring execution until multiple instances are available e.g. a dependence of a class `C` on `A` __and__ `B` could be expressed as:
 
 ```cpp
 struct C{
