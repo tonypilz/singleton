@@ -17,8 +17,10 @@ public:
     auto copy = std::move(operations);
     operations.clear();
     for (auto const &op : copy) {
-      const bool executed =
-          op(t); // this might change the variable 'operations'!
+      const bool executed = op(t); // this might change the variable
+                                   // 'operations', but only inverse operations
+                                   // since direct operations will be executed
+                                   // instantly!
       if (!executed)
         operations.push_back(std::move(op));
     }
@@ -105,9 +107,10 @@ public:
     return val;
   }
 
-  Ptr ptr() const { return val; }
+  Ptr rawPtr() const { return val; }
 
-  template <typename Cond, typename Func> void visitIf(Cond c, Func func) {
+  template <typename Cond, typename Func>
+  void ifAvailabilityChanged(Cond c, Func func) {
     if (c(val)) {
       func(val);
       return;
@@ -121,24 +124,24 @@ public:
     });
   }
 
-  template <typename Func> void visitIfNotNull(Func func) {
+  template <typename Func> void ifAvailable(Func func) {
     auto notNull = [](Ptr const &t) { return t != nullptr; };
     auto pfunc = [func](Ptr const &t) {
       if (t == nullptr)
         throw NullptrAccess();
       func(*t);
     };
-    visitIf(notNull, pfunc);
+    ifAvailabilityChanged(notNull, pfunc);
   }
 
-  template <typename Func> void visitIfNull(Func func) {
+  template <typename Func> void ifUnavailable(Func func) {
     auto null = [](Ptr const &t) { return t == nullptr; };
     auto pfunc = [func](Ptr const &t) {
       if (t != nullptr)
         throw UnexpectedNonNullInstance();
       func();
     };
-    visitIf(null, pfunc);
+    ifAvailabilityChanged(null, pfunc);
   }
 
   NullPtrAccessHandler onNullPtrAccess;
@@ -168,6 +171,10 @@ template <typename T, typename Sub = detail::staticValueSubDefault>
 detail::InstancePointer<T *> &instance() {
   return detail::staticValue<detail::InstancePointer<T *>>();
 }
+template <typename T, typename Sub = detail::staticValueSubDefault>
+T &instanceRef() {
+  return *static_cast<T *>(detail::staticValue<detail::InstancePointer<T *>>());
+}
 inline NullptrAccessHandler::type &onNullptrAccess() {
   return detail::staticValue<NullptrAccessHandler>().handler;
 } // global handler
@@ -188,14 +195,14 @@ public:
 
   virtual void registerInstance(T *t) {
     deregisterInstance();
-    replacedInstance = instance<T, Sub>().ptr();
+    replacedInstance = instance<T, Sub>().rawPtr();
     instance<T, Sub>() = t; // possibly deregisters again
   }
 
   virtual void deregisterInstance() {
     if (replacedInstance.isValueSet() == false)
       return; // noting to do
-    T *tmp = static_cast<T*>(replacedInstance);
+    T *tmp = static_cast<T *>(replacedInstance);
     replacedInstance.unsetValue();
     instance<T, Sub>() = tmp; // possibly registers again
   }
