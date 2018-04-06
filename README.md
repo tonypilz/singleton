@@ -480,8 +480,8 @@ T& instance() {
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
 
-Feature | This Lib  | Classical Singleton | [herpe] | [ugrif] | [xytis] | [aworx] | [fwolt] | [zyf38] | [cheno]
---- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- 
+| Feature | This Lib | Classical Singleton | [herpe] | [ugrif] | [xytis] | [aworx] | [fwolt] | [zyf38] | [cheno] |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | 
 supports instance replacement for testing | X | - | - | - | - | - | - | - | X
 automatic 2-phase initialization | X | - | - | - | - | - | - | - | -
 control over construction seqence | full | limited | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited | limited<sup>2</sup> | limited<sup>2</sup>
@@ -493,6 +493,7 @@ threadsave construction | - | X | X | - | - | X<sup>5</sup> | X | X | X
 implementation pattern | indep. class | function | CRTP | macro |  indep. class  | CRTP | CRTP | indep. class | indep. class 
 forces virtual destructor | - | - | X | - | - | X | - | - | -
 thread local instances | - | - | - | - | - | - | - | - | X
+
  <sup>1</sup> Implementation of constructor arguments incorrect
 
  <sup>2</sup> Possibly susceptible to static initialization order problems due to using raw static variables
