@@ -292,7 +292,7 @@ And since the second hanlder is used for all types it cannot provide an alternat
 In this paragraph some minor aspects to using this library will be discussed.
 
 ### Thread Savety
-This library does not employ synchnization primitives like mutexes. Therefore it is generally not thread-save. However in most cases, this is not a problem since registration/deregistration of global instances usually happens at the beginning and during program exit which is almost always done by a single thread. And in between all calls to `global::instance<T>()` are thread-save since no data is beeing changed:
+This library does not employ synchnization primitives like mutexes. Therefore it is generally not thread-save. However, since the library provides full control over timepoint of construction / destruction it should almost never be necessary to synchronize global instance construction or destruction since program startup and shutdown happen in almost all casses single threaded. And after construction of all global instances is complete all calls to `global::instance<T>()` are thread-save since no data is beeing changed:
 
 ```cpp
 struct A{ void foo(); };
@@ -311,6 +311,31 @@ void main(){
 
  // single threaded destruction
  
+}
+```
+
+Note that this argument is not true for singleton implementations, since the timepoint of construction could unexpectedly be during multithreaded runtime, which happens eg if we forgot to construct an instance eagerly at startup which usually goes unnoticed. But since the construction of a classical singleton is threadsave by default, thread savety does not pose a problem too.
+
+Also note, that since we have full controll over timepoint of construction synchronization can always been added manually if needed: 
+
+```cpp
+struct A{ void foo(); };
+
+void makeA{
+    // construction in a multithreaded environment
+    static std::mutex mutex;
+    mutex.lock();
+    static auto a = new global::Instance<A>();  
+    mutex.unlock();
+}
+
+void main(){
+
+ std::thread t1([](){ makeA(); global::instance<A>()->foo(); });
+ std::thread t2([](){ makeA(); global::instance<A>()->foo(); });
+
+ t1.join();
+ t2.join();
 }
 ```
 
@@ -431,46 +456,64 @@ The indicator instance of type `RunelevelX` is used here to indicate a certain p
 
 ### Comparision with the Classical Singleton
 
-The library improves the classical singleton with respect to 
- - testing
- - control over construction/destruction
-   - sequence (relative to other singletons)
-   - timepoint (within program eg within static initialization or below function `main()`)
-   - arguments to the constructor
-   - storage location (stack, heap, static storage)
- - necessity of two-phase initialization
+The library set out to adress the following minor and major drawbacks of the classical singleton:
+ - testability
+ - sometimes requires two-phase initialization
+ - missing control over construction sequence of instances
+ - missing control over destruction sequence of instances
+ - destruction during static deinitialization
+ - no arguments to the constructor of instances
 
-And although the aspects above could also be implemented/fixed in the context of the classical singleton, that implementation would be error prone and hard to read which makes it appear less favourable than the solutions advocated by this library.
+So the main difference to the classical singleton lies in the improvement of these drawbacks.
+
+Note: By classical singleton something like the following is meant:
+
+```cpp
+template<typename T>
+T& instance() {
+    static T t;
+    return t;
+}
+```
 
 ### Comparision to Other Libraries
 
-Most singleton libraries found on github are demos/examples or private implementations, except:
+Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
 
- - [https://github.com/herpec-j/Singleton](https://github.com/herpec-j/Singleton)
-   - Implementation of the classical singleton using CRTP  
-   - Not sure if implemenation is correct concerning constructor arguments (tests dont cover the case)
-   - Uses custom implementaiton of spinlock
- - [https://github.com/ugriffin/VSSynthesiseSingleton](https://github.com/ugriffin/VSSynthesiseSingleton)
-   - Implementation of the classical singleton employing macros to generate singleton code  
- - [https://github.com/xytis/typedef-singleton](https://github.com/xytis/typedef-singleton)
-   - Behaves like a classical singleton though not implemented as one
-   - No constructor arguments can be provided
- - [https://github.com/AlexWorx/ALib-Singleton](https://github.com/AlexWorx/ALib-Singleton)
-   - Implementation of the classical singleton using CRTP
-   - No constructor arguments can be provided
-   - Singleton is constructed on the heap
-   - Any singleton class is forced to have a virtual destructor
- - [https://github.com/FlorianWolters/cpp-component-util-singleton](https://github.com/FlorianWolters/cpp-component-util-singleton)
-   - Implementation of the classical singleton using CRTP
- - [https://github.com/zyf3883310/C-11-Thread-Safe-Singleton](https://github.com/zyf3883310/C-11-Thread-Safe-Singleton)
-   - Implementation of the classical singleton using template class
- - [https://github.com/chenokay/selib](https://github.com/chenokay/selib)
-   - Implementation of the classical singleton using template class
+Feature | This Lib  | Classical Singleton | [herpe] | [ugrif] | [xytis] | [aworx] | [fwolt] | [zyf38] | [cheno]
+--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- 
+supports instance replacement for testing | X | - | - | - | - | - | - | - | X
+automatic 2-phase initialization | X | - | - | - | - | - | - | - | -
+control over construction seqence | full | limited | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited | limited<sup>2</sup> | limited<sup>2</sup>
+control over destruction seqence | full | none | none | full | full | full | none | none | full
+control over destruction point in time |  full | none | none | full | full | full | none | none | full
+automatic destruction | X | X | X | - | -<sup>3</sup> | - | X | X | -<sup>4</sup>
+constructor arguments | X | - | X<sup>1</sup> | - | - | - | X | - | -
+threadsave construction | - | X | X | - | - | X<sup>5</sup> | X | X | X
+implementation pattern | indep. class | function | CRTP | macro |  indep. class  | CRTP | CRTP | indep. class | indep. class 
+forces virtual destructor | - | - | X | - | - | X | - | - | -
+thread local instances | - | - | - | - | - | - | - | - | X
+ <sup>1</sup> Implementation of constructor arguments incorrect
 
-All of the above listed implementations basically reproduce the classical singleton with minor to no improvements / changes. Therefore [the basic problems of the classical singleton](#comparision-with-the-classical-singleton) persist.
+ <sup>2</sup> Possibly susceptible to static initialization order problems due to using raw static variables
+
+ <sup>3</sup> Access after manual destruction causes undefined behaviour
+ 
+ <sup>4</sup> Requires setting the instance manually to `nullptr` after deleting it manually
+
+ <sup>5</sup> Implementation of manual locking/unlocking incorrect
 
 CRTP = curiously recurring template pattern
 
+indep. class = independed free standing class(es) which do not require inheritance
+
+[herpe]: https://github.com/herpec-j/Singleton
+[ugrif]: https://github.com/ugriffin/VSSynthesiseSingleton
+[xytis]: https://github.com/xytis/typedef-singleton
+[aworx]: https://github.com/AlexWorx/ALib-Singleton
+[fwolt]: https://github.com/FlorianWolters/cpp-component-util-singleton
+[zyf38]: https://github.com/zyf3883310/C-11-Thread-Safe-Singleton
+[cheno]: https://github.com/chenokay/selib
 
 # Under the Hood
  
