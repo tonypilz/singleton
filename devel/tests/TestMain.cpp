@@ -39,7 +39,7 @@ TestMain::TestMain(int argc, char* argv[])
     }
 
     {
-        ConditionalSingleShotOperationsTest tc;
+        DeferredOperationsTest tc;
         if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
     }
 

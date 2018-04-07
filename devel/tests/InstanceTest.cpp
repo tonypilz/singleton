@@ -260,7 +260,7 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A>().ifAvailabilityChanged(
+    instance<A>().addDeferredOperation(
                 [&](A* const&p){ ++condCallCount; return p==&a;},
                 [&](A* const&r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -275,7 +275,7 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A>().ifAvailabilityChanged(
+    instance<A>().addDeferredOperation(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -294,7 +294,7 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A,Sub>().ifAvailabilityChanged(
+    instance<A,Sub>().addDeferredOperation(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -309,7 +309,7 @@ void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
     int funcCallCount = 0;
     int condCallCount = 0;
 
-    instance<A,Sub>().ifAvailabilityChanged(
+    instance<A,Sub>().addDeferredOperation(
                 [&](A*p){ ++condCallCount; return p==&a;},
                 [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
 
@@ -340,8 +340,8 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
 
     const int n = 20;
     for(int i = 0;i<n;++i){
-        instance<A,Sub>().ifAvailabilityChanged(c1,f1);
-        instance<A,Sub>().ifAvailabilityChanged(c2,f2);
+        instance<A,Sub>().addDeferredOperation(c1,f1);
+        instance<A,Sub>().addDeferredOperation(c2,f2);
     }
 
     QCOMPARE(funcCallCount1,0);
@@ -376,10 +376,10 @@ void InstanceTest::recursiveQueuingWorks()
     bool cond1 = false;
     bool cond2 = false;
 
-    instance<A,Sub>().ifAvailabilityChanged(
+    instance<A,Sub>().addDeferredOperation(
                 [&](A*){ return cond1;},
                 [&](A*){ ++funcCallCount1;
-                        instance<A,Sub>().ifAvailabilityChanged(
+                        instance<A,Sub>().addDeferredOperation(
                                     [&](A*){ return cond2;},
                                     [&](A*){ ++funcCallCount2;});
                        });

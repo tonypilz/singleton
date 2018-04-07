@@ -7,8 +7,6 @@
 namespace global {
 namespace detail {
 
-class UnexpectedNonNullInstance : public std::exception {};
-
 template<typename Ptr>
 class InstancePointer {
 
@@ -21,10 +19,10 @@ public:
     bool operator==(Ptr const& t) const{ return val == t;}
     bool operator!=(Ptr const& t) const{ return val != t;}
 
-    operator bool(){
+    operator bool() const{
         return val!=nullptr;
     }
-    operator Ptr(){
+    operator Ptr() const{
         return operator ->();
     }
 
@@ -37,38 +35,38 @@ public:
         return val;
     }
 
-    Ptr rawPtr() const{
-        return val;
-    }
 
     template<typename Cond, typename Func>
-    void ifAvailabilityChanged(Cond c, Func func){
-        if (c(val)) {func(val); return;} // direct call if condition is met!s
-        deferredOperations.add([c,func](Ptr const& t){ if (c(t)) {func(t); return true;} return false;});
+    void addDeferredOperation(Cond c, Func func){
+        deferredOperations.addDeferredOperation(c,func);
+        deferredOperations.conditionsChanged(val);
     }
 
     template<typename Func >
     void ifAvailable(Func func){
-        auto notNull = [](Ptr const& t){return t!=nullptr;};
-        auto pfunc = [func](Ptr const& t){if (t==nullptr) throw NullptrAccess(); func(*t);};
-        ifAvailabilityChanged(notNull,pfunc);
+        deferredOperations.ifAvailable(func);
+        deferredOperations.conditionsChanged(val);
     }
+
 
     template<typename Func >
     void ifUnavailable(Func func){
-        auto null = [](Ptr const& t){return t==nullptr;};
-        auto pfunc = [func](Ptr const& t){if (t!=nullptr) throw UnexpectedNonNullInstance(); func();};
-        ifAvailabilityChanged(null,pfunc);
+        deferredOperations.ifUnavailable(func);
+        deferredOperations.conditionsChanged(val);
     }
 
     NullPtrAccessHandler onNullPtrAccess;
 
 private:
 
+    Ptr rawPtr() const{
+        return val;
+    }
+
     InstancePointer& operator=(Ptr const& t){
         if (val == t) return *this; //nothing changed
         val = t;
-        deferredOperations(val);
+        deferredOperations.conditionsChanged(val);
         return *this;
     }
 

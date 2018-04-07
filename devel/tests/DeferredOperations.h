@@ -4,11 +4,11 @@
 #include <QObject>
 #include <QtTest/QtTest>
 
-class ConditionalSingleShotOperationsTest : public QObject
+class DeferredOperationsTest : public QObject
 {
     Q_OBJECT
 public:
-    explicit ConditionalSingleShotOperationsTest(QObject *parent = nullptr);
+    explicit DeferredOperationsTest(QObject *parent = nullptr);
 
     struct A{};
 
