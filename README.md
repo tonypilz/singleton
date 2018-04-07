@@ -214,6 +214,7 @@ struct B{
  void foo();
 };
 
+
 void main(){
 
  global::Instance<A> a;
@@ -239,10 +240,31 @@ struct C{
                 });
         });
  }
-
 };
-
 ```
+
+Arbitrary conditions can also be used in conjunction with deferred calls:
+
+```cpp
+struct D{
+ 
+ D() {
+     global::instance<A>().addDeferredOperation(
+        [this](A* a){
+            if (a!=nullptr && this->someCondtion() && a->someOtherCondition()) {
+                this->baz(); 
+                return global::DeferredOperationState::finished;
+            }
+            return global::DeferredOperationState::pending;
+        });
+ }
+
+ bool someCondition();
+ void baz();
+};
+```
+The deferred operation will be called if the instance of `global::instance<A>()` changes until `DeferredOperationState::finished` is returned by the operation.
+
 
 
 ## How to Pass Arguments to the Constructor

@@ -4,6 +4,9 @@
 
 using namespace global;
 
+constexpr auto condition_not_met = DeferredOperationState::pending;
+constexpr auto operation_executed = DeferredOperationState::finished;
+
 InstanceTest::InstanceTest(QObject *parent) : QObject(parent)
 {
 
@@ -258,14 +261,15 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
     detail::InstanceRegistration<A> registration(&a);
 
     int funcCallCount = 0;
-    int condCallCount = 0;
 
     instance<A>().addDeferredOperation(
-                [&](A* const&p){ ++condCallCount; return p==&a;},
-                [&](A* const&r){ QCOMPARE(r,&a); ++funcCallCount; });
+                [&](A* const&p){
+                    if (p!=&a) return condition_not_met;
+                    ++funcCallCount;
+                    return operation_executed;});
 
     QCOMPARE(funcCallCount,1);
-    QVERIFY(condCallCount>0);
+
 }
 
 void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
@@ -273,16 +277,16 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
     A a;
 
     int funcCallCount = 0;
-    int condCallCount = 0;
 
     instance<A>().addDeferredOperation(
-                [&](A*p){ ++condCallCount; return p==&a;},
-                [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
+                [&](A* const&p){
+                    if (p!=&a) return condition_not_met;
+                    ++funcCallCount;
+                    return operation_executed;});
 
     detail::InstanceRegistration<A> registration(&a);
 
     QCOMPARE(funcCallCount,1);
-    QVERIFY(condCallCount>0);
 }
 
 void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
@@ -292,14 +296,15 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
     detail::InstanceRegistration<A,Sub> registration(&a);
 
     int funcCallCount = 0;
-    int condCallCount = 0;
+
 
     instance<A,Sub>().addDeferredOperation(
-                [&](A*p){ ++condCallCount; return p==&a;},
-                [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
+                [&](A* const&p){
+                    if (p!=&a) return condition_not_met;
+                    ++funcCallCount;
+                    return operation_executed;});
 
     QCOMPARE(funcCallCount,1);
-    QVERIFY(condCallCount>0);
 }
 
 void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
@@ -307,16 +312,16 @@ void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
     A a;
 
     int funcCallCount = 0;
-    int condCallCount = 0;
 
     instance<A,Sub>().addDeferredOperation(
-                [&](A*p){ ++condCallCount; return p==&a;},
-                [&](A*r){ QCOMPARE(r,&a); ++funcCallCount; });
+                [&](A* const&p){
+                    if (p!=&a) return condition_not_met;
+                    ++funcCallCount;
+                    return operation_executed;});
 
     detail::InstanceRegistration<A,Sub> registration(&a);
 
     QCOMPARE(funcCallCount,1);
-    QVERIFY(condCallCount>0);
 }
 
 void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChange()
@@ -324,31 +329,27 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
     A a;
 
     int funcCallCount1 = 0;
-    int condCallCount1 = 0;
     int funcCallCount2 = 0;
-    int condCallCount2 = 0;
-
-    A* null = nullptr;
-
     bool enabled = false;
 
-    auto c1 = [&](A*p){ ++condCallCount1; return p==&a && enabled;};
-    auto c2 = [&](A*p){ ++condCallCount2; return p==nullptr && enabled;};
-
-    auto f1 = [&](A*r){ ++funcCallCount1; QCOMPARE(r,&a); };
-    auto f2 = [&](A*r){ ++funcCallCount2; QCOMPARE(r,null); };
-
+    auto func1 = [&](A* const&p){
+                        if (!enabled) return condition_not_met;
+                        if (p!=&a) return condition_not_met;
+                        ++funcCallCount1;
+                        return operation_executed;};
+    auto func2 = [&](A* const&p){
+                        if (!enabled) return condition_not_met;
+                        if (p!=nullptr) return condition_not_met;
+                        ++funcCallCount2;
+                        return operation_executed;};
     const int n = 20;
     for(int i = 0;i<n;++i){
-        instance<A,Sub>().addDeferredOperation(c1,f1);
-        instance<A,Sub>().addDeferredOperation(c2,f2);
+        instance<A,Sub>().addDeferredOperation(func1);
+        instance<A,Sub>().addDeferredOperation(func2);
     }
 
     QCOMPARE(funcCallCount1,0);
-    QVERIFY(condCallCount1>=n);
-
     QCOMPARE(funcCallCount2,0);
-    QVERIFY(condCallCount2>=n);
 
     enabled = true;
 
@@ -373,18 +374,19 @@ void InstanceTest::recursiveQueuingWorks()
     int funcCallCount1 = 0;
     int funcCallCount2 = 0;
 
-    bool cond1 = false;
-    bool cond2 = false;
+    auto func2 = [&](A* const&p){
+                    if (p!=nullptr) return condition_not_met;
+                    ++funcCallCount2;
+                    return operation_executed;};
 
-    instance<A,Sub>().addDeferredOperation(
-                [&](A*){ return cond1;},
-                [&](A*){ ++funcCallCount1;
-                        instance<A,Sub>().addDeferredOperation(
-                                    [&](A*){ return cond2;},
-                                    [&](A*){ ++funcCallCount2;});
-                       });
+    auto func1 = [&](A* const&p){
+                    if (p!=&a) return condition_not_met;
+                    instance<A,Sub>().addDeferredOperation(func2);
+                    ++funcCallCount1;
+                    return operation_executed;};
 
-    cond1 = true;
+    instance<A,Sub>().addDeferredOperation(func1);
+
 
     QCOMPARE(funcCallCount1,0);
     QCOMPARE(funcCallCount2,0);
@@ -394,12 +396,18 @@ void InstanceTest::recursiveQueuingWorks()
 
         QCOMPARE(funcCallCount1,1);
         QCOMPARE(funcCallCount2,0);
-
-        cond2 = true;
     }
 
     QCOMPARE(funcCallCount1,1);
     QCOMPARE(funcCallCount2,1);
+
+    {
+        detail::InstanceRegistration<A,Sub> registration(&a);
+
+        QCOMPARE(funcCallCount1,1);
+        QCOMPARE(funcCallCount2,1);
+
+    }
 }
 
 void InstanceTest::registerForDestructionWorks()

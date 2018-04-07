@@ -1,62 +1,63 @@
 #pragma once
 
-#include "NullptrAccessHandler.h"
 #include <list>
 #include <functional>
 
 namespace global {
-namespace detail {
 
-
-class UnexpectedNonNullInstance : public std::exception {};
-
-enum class ConditionState{
-    condition_not_met,
-    operation_executed
+enum class DeferredOperationState{
+    pending,
+    finished
 };
+
+namespace detail {
 
 template<typename T>
 class DeferredOperations {
 public:
 
-    template<typename Cond, typename Func>
-    void addDeferredOperation(Cond c, Func func){
-        operations.emplace_back([c,func](T const& t){ if (c(t)) {func(t); return true;} return false;});
+    template<typename Op >
+    void addDeferredOperation(Op func){
+        operations.emplace_back(func);
     }
 
     template<typename Func >
     void ifAvailable(Func func){
-        auto notNull = [](T const& t){return t!=nullptr;};
-        auto pfunc = [func](T const& t){if (t==nullptr) throw NullptrAccess(); func(*t);};
-        addDeferredOperation(notNull,pfunc);
+        operations.emplace_back(
+                    [func](T const& t) {
+                        if (t==nullptr) return DeferredOperationState::pending;
+                        func(*t);
+                        return DeferredOperationState::finished;
+        });
     }
 
     template<typename Func >
     void ifUnavailable(Func func){
-        auto null = [](T const& t){return t==nullptr;};
-        auto pfunc = [func](T const& t){if (t!=nullptr) throw UnexpectedNonNullInstance(); func();};
-        addDeferredOperation(null,pfunc);
+        operations.emplace_back(
+                    [func](T const& t) {
+                        if (t!=nullptr) return DeferredOperationState::pending;
+                        func();
+                        return DeferredOperationState::finished;
+        });
     }
 
 
-    void conditionsChanged(T const& t){
+    void conditionsChanged(T const& t){ //while find
         auto copy = std::move(operations);
         operations.clear();
         for(auto const& op:copy){
-            const bool executed = op(t); //this might change the variable 'operations', but only inverse operations since direct operations will be executed instantly!
-            if (!executed) operations.push_back(std::move(op));
+             //op(t) might add new operations, but only non with state condition_not_met since direct operations will be executed instantly!
+            if (op(t)==DeferredOperationState::pending) operations.push_back(std::move(op));
         }
     }
 
 private:
 
-
-    using Operation = bool(T const&);
+    using Operation = DeferredOperationState(T const&);
     using Operations = std::list<std::function<Operation>>;
-
     Operations operations;
 
-};  //if (c(val)) {func(val); return;} // direct call if condition is met!s
+};
 
 }
 }

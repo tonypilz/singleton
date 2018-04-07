@@ -3,6 +3,8 @@
 #include <src/globalInstances.h>
 
 using global::detail::DeferredOperations;
+constexpr auto condition_not_met = global::DeferredOperationState::pending;
+constexpr auto operation_executed = global::DeferredOperationState::finished;
 
 DeferredOperationsTest::DeferredOperationsTest(QObject *parent) : QObject(parent)
 {
@@ -13,12 +15,11 @@ void DeferredOperationsTest::argumentIsPassedToEachElement()
 {
     DeferredOperations<A> op;
 
-    auto trueCond = [](A const&){return true;};
     A a;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
-    op.addDeferredOperation(trueCond,[&](A const&e){ out1 = &e; });
-    op.addDeferredOperation(trueCond,[&](A const&e){ out2 = &e; });
+    op.addDeferredOperation([&](A const&e){ out1 = &e; return operation_executed; });
+    op.addDeferredOperation([&](A const&e){ out2 = &e; return operation_executed; });
     op.conditionsChanged(a);
     QCOMPARE(out1,&a);
     QCOMPARE(out2,&a);
@@ -32,7 +33,7 @@ void DeferredOperationsTest::falseConditionsAreRexecuted()
     A a;
     int count = 0;
 
-    op.addDeferredOperation([&](A const&){++count; return false;},[&](A const&){++count;});
+    op.addDeferredOperation([&](A const&){++count; return condition_not_met;});
 
     op.conditionsChanged(a);
     QCOMPARE(count,1);
@@ -46,11 +47,10 @@ void DeferredOperationsTest::trueConditionsAreExecutedOnce()
 {
     DeferredOperations<A> op;
 
-    auto trueCond = [](A const&){return true;};
     A a;
     int count = 0;
 
-    op.addDeferredOperation(trueCond,[&](A const&){++count; });
+    op.addDeferredOperation([&](A const&){++count; return operation_executed;});
 
     op.conditionsChanged(a);
     QCOMPARE(count,1);
@@ -63,17 +63,17 @@ void DeferredOperationsTest::recursiveExecutionWorks()
 {
     DeferredOperations<A> op;
 
-    auto trueCond = [](A const&){return true;};
-
     A a1, a2;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
 
-    op.addDeferredOperation(trueCond,[&](A const&e1){
+    op.addDeferredOperation([&](A const&e1){
         out1 = &e1;
-        op.addDeferredOperation(trueCond,[&](A const&e2) {
+        op.addDeferredOperation([&](A const&e2) {
             out2 = &e2;
+            return operation_executed;
         });
+        return operation_executed;
     });
 
     op.conditionsChanged(a1);
@@ -93,17 +93,18 @@ void DeferredOperationsTest::recursiveExecutionWorks()
 void DeferredOperationsTest::recursiveExecutionWorks1()
 {
     DeferredOperations<A> op;
-    auto trueCond = [](A const&){return true;};
 
     A a1, a2;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
 
-    op.addDeferredOperation(trueCond,[&](A const&e1){
+    op.addDeferredOperation([&](A const&e1){
         out1 = &e1;
-        op.addDeferredOperation(trueCond,[&](A const&e2) {
+        op.addDeferredOperation([&](A const&e2) {
             out2 = &e2;
+            return operation_executed;
         });
+        return operation_executed;
     });
 
     op.conditionsChanged(a1);

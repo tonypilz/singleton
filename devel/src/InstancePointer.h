@@ -22,9 +22,9 @@ public:
 
     Ptr operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
 
-    template<typename Cond, typename Func>
-    void addDeferredOperation(Cond c, Func func){
-        deferredOperations.addDeferredOperation(c,func);
+    template<typename DeferredOperation>
+    void addDeferredOperation(DeferredOperation op){
+        deferredOperations.addDeferredOperation(op);
         deferredOperations.conditionsChanged(instancePtr);
     }
 
