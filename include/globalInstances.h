@@ -7,29 +7,59 @@
 
 namespace global {
 
+enum class DeferredOperationState { pending, finished };
 namespace detail {
 
-template <typename T> class ConditionalSingleShotOperations {
+template <typename TargetInstance> class DeferredOperations {
 public:
-  template <typename Op> void add(Op op) { operations.emplace_back(op); }
+  template <typename Op> void addDeferredOperationWithArgBefore(Op func) {
+    operations.emplace_back(func);
+  }
 
-  void operator()(T const &t) {
+  template <typename Op> void addDeferredOperation(Op func) {
+    addDeferredOperationWithArgBefore(
+        [func](TargetInstance * /*before*/, TargetInstance *current) {
+          return func(current);
+        });
+  }
+
+  template <typename Func> void ifAvailable(Func func) {
+    addDeferredOperation([func](TargetInstance *current) {
+      if (current == nullptr)
+        return DeferredOperationState::pending;
+      func(*current);
+      return DeferredOperationState::finished;
+    });
+  }
+
+  template <typename Func> void ifUnavailable(Func func) {
+    addDeferredOperation([func](TargetInstance *current) {
+      if (current != nullptr)
+        return DeferredOperationState::pending;
+      func();
+      return DeferredOperationState::finished;
+    });
+  }
+
+  void conditionsChanged(TargetInstance *before,
+                         TargetInstance *current) { // while find
     auto copy = std::move(operations);
     operations.clear();
     for (auto const &op : copy) {
-      const bool executed = op(t); // this might change the variable
-                                   // 'operations', but only inverse operations
-                                   // since direct operations will be executed
-                                   // instantly!
-      if (!executed)
+      // op(t) might add new operations to 'operations', but only non with state
+      // pending since direct operations will be executed instantly!
+      if (op(before, current) == DeferredOperationState::pending)
         operations.push_back(std::move(op));
     }
+
+    if (copy.size() != operations.size())
+      conditionsChanged(before, current);
   }
 
 private:
-  using Operation = bool(T const &);
+  using Operation = DeferredOperationState(
+      TargetInstance *, TargetInstance *); // todo remove const
   using Operations = std::list<std::function<Operation>>;
-
   Operations operations;
 };
 
@@ -50,132 +80,126 @@ template <typename T, typename Sub = staticValueSubDefault> T &staticValue() {
   return t;
 }
 
-class bad_optional_access
- : public std::exception {};
+class bad_optional_access_impl : public std::exception {};
 
-template <typename T> class OptionalValue {
+using bad_optional_access =
+    bad_optional_access_impl; // use c++17 version if available
+
+template <typename T> class OptionalValueImpl {
 
 public:
-  explicit OptionalValue() {}
+  explicit OptionalValueImpl() {}
 
-  OptionalValue &operator=(T const &t) {
+  OptionalValueImpl &operator=(T const &t) {
     val = t;
-    isSet = true;
+    m_hasValue = true;
     return *this;
   }
 
   explicit operator T() const {
-    if (!isSet)
-      throw bad_optional_access
-();
+    if (!m_hasValue)
+      throw bad_optional_access();
     return val;
   }
 
-  bool isValueSet() const { return isSet; }
-  void unsetValue() { isSet = false; }
+  bool has_value() const { return m_hasValue; }
+  void reset() { m_hasValue = false; }
 
 private:
   T val;
-  bool isSet = false;
+  bool m_hasValue = false;
 };
 
-class UnexpectedNonNullInstance : public std::exception {};
+template <typename T>
+using optional = OptionalValueImpl<T>; // use c++17 version if available
 
-template <typename Ptr> class InstancePointer {
+template <typename T> class InstancePointer {
 
 public:
-  using ValueType = Ptr;
-  using Classtype = InstancePointer<Ptr>;
-
-  using NullPtrAccessHandler = std::function<Ptr()>;
-  using ValueChanged = std::function<void(Ptr const &)>;
-
   explicit InstancePointer() {}
 
-  bool operator==(Ptr const &t) const { return val == t; }
-  bool operator!=(Ptr const &t) const { return val != t; }
+  operator bool() const { return instancePtr != nullptr; }
 
-  operator bool() { return val != nullptr; }
-  operator Ptr() { return operator->(); }
+  bool operator==(T const *t) const { return instancePtr == t; }
+  bool operator!=(T const *t) const { return instancePtr != t; }
 
-  Ptr operator->() const {
-    if (val == nullptr) {
-      if (onNullPtrAccess)
-        return onNullPtrAccess();
-      detail::staticValue<NullptrAccessHandler>()
-          .handler(); // global handler is installed by default
-      return nullptr;
-    }
-    return val;
+  explicit operator const T *() const { return operator->(); }
+  explicit operator T *() { return operator->(); }
+
+  const T &operator*() const & { return *instancePtr; }
+  T &operator*() & { return *instancePtr; }
+
+  const T *operator->() const {
+    return instancePtr != nullptr ? instancePtr : handleNull();
+  }
+  T *operator->() {
+    return instancePtr != nullptr ? instancePtr : handleNull();
   }
 
-  Ptr rawPtr() const { return val; }
+  template <typename Op> void addDeferredOperationWithArgBefore(Op func) {
+    deferredOperations.addDeferredOperationWithArgBefore(func);
+    deferredOperations.conditionsChanged(instancePtr, instancePtr);
+  }
 
-  template <typename Cond, typename Func>
-  void ifAvailabilityChanged(Cond c, Func func) {
-    if (c(val)) {
-      func(val);
-      return;
-    } // direct call if condition is met!s
-    changeOperations.add([c, func](Ptr const &t) {
-      if (c(t)) {
-        func(t);
-        return true;
-      }
-      return false;
-    });
+  template <typename DeferredOperation>
+  void addDeferredOperation(DeferredOperation op) {
+    deferredOperations.addDeferredOperation(op);
+    deferredOperations.conditionsChanged(instancePtr, instancePtr);
   }
 
   template <typename Func> void ifAvailable(Func func) {
-    auto notNull = [](Ptr const &t) { return t != nullptr; };
-    auto pfunc = [func](Ptr const &t) {
-      if (t == nullptr)
-        throw NullptrAccess();
-      func(*t);
-    };
-    ifAvailabilityChanged(notNull, pfunc);
+    deferredOperations.ifAvailable(func);
+    deferredOperations.conditionsChanged(instancePtr, instancePtr);
   }
 
   template <typename Func> void ifUnavailable(Func func) {
-    auto null = [](Ptr const &t) { return t == nullptr; };
-    auto pfunc = [func](Ptr const &t) {
-      if (t != nullptr)
-        throw UnexpectedNonNullInstance();
-      func();
-    };
-    ifAvailabilityChanged(null, pfunc);
+    deferredOperations.ifUnavailable(func);
+    deferredOperations.conditionsChanged(instancePtr, instancePtr);
   }
 
-  NullPtrAccessHandler onNullPtrAccess;
+  std::function<T *()> onNullPtrAccess;
+  std::function<void()> onNullPtrAccessUntyped;
 
 private:
-  InstancePointer &operator=(Ptr const &t) {
-    if (val == t)
+  T *handleNull() const {
+    if (onNullPtrAccess)
+      return onNullPtrAccess();
+    if (onNullPtrAccessUntyped)
+      onNullPtrAccessUntyped(); // if this returns we execute global handler
+    detail::staticValue<NullptrAccessHandler>()
+        .handler(); // global handler should always be there
+    return nullptr; // shouldnt be reached
+  }
+
+  InstancePointer &operator=(T *t) {
+    if (instancePtr == t)
       return *this; // nothing changed
-    val = t;
-    changeOperations(val);
+    auto before = instancePtr;
+    instancePtr = t;
+    deferredOperations.conditionsChanged(before, instancePtr);
     return *this;
   }
 
   template <typename, typename> friend class ReplacingInstanceRegistration;
 
-  InstancePointer(InstancePointer<Ptr> const &) = delete;
-  InstancePointer<Ptr> const &operator=(InstancePointer<Ptr> const &) = delete;
+  using ClassType = InstancePointer<T>;
+  InstancePointer(ClassType const &) = delete;
+  ClassType const &operator=(ClassType const &) = delete;
 
-  detail::ConditionalSingleShotOperations<Ptr> changeOperations;
+  detail::DeferredOperations<T> deferredOperations; // todo
 
-  Ptr val = nullptr;
+  T *instancePtr = nullptr;
 };
 
 } // namespace detail
 
 template <typename T, typename Sub = detail::staticValueSubDefault>
-detail::InstancePointer<T *> &instance() {
-  return detail::staticValue<detail::InstancePointer<T *>>();
+detail::InstancePointer<T> &instance() {
+  return detail::staticValue<detail::InstancePointer<T>>();
 }
 template <typename T, typename Sub = detail::staticValueSubDefault>
 T &instanceRef() {
-  return *static_cast<T *>(detail::staticValue<detail::InstancePointer<T *>>());
+  return *detail::staticValue<detail::InstancePointer<T>>();
 }
 inline NullptrAccessHandler::type &onNullptrAccess() {
   return detail::staticValue<NullptrAccessHandler>().handler;
@@ -197,15 +221,15 @@ public:
 
   virtual void registerInstance(T *t) {
     deregisterInstance();
-    replacedInstance = instance<T, Sub>().rawPtr();
+    replacedInstance = instance<T, Sub>().instancePtr;
     instance<T, Sub>() = t; // possibly deregisters again
   }
 
   virtual void deregisterInstance() {
-    if (replacedInstance.isValueSet() == false)
+    if (replacedInstance.has_value() == false)
       return; // noting to do
     T *tmp = static_cast<T *>(replacedInstance);
-    replacedInstance.unsetValue();
+    replacedInstance.reset();
     instance<T, Sub>() = tmp; // possibly registers again
   }
 
@@ -213,7 +237,7 @@ private:
   ReplacingInstanceRegistration(ReplacingInstanceRegistration const &) =
       delete; // no copy
 
-  detail::OptionalValue<T *> replacedInstance;
+  detail::optional<T *> replacedInstance;
 };
 
 // expects nullptr to be registered beforehand

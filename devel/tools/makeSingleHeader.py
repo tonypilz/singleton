@@ -3,7 +3,7 @@ import subprocess
 
 headerDir = '../src'
 headerFiles = [
-   'ConditionalSingleShotOperations.h',
+   'DeferredOperations.h',
    'NullptrAccessHandler.h',
    'staticValue.h',
    'OptionalValue.h',
