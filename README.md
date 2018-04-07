@@ -1,8 +1,8 @@
 # Overview
 
-The library allows the construction of and access to global instances which makes it an alternative to the classical singleton. The advantage is that [most of the drawbacks of the singleton are avoided](#comparision-with-the-classical-singleton).
+The library allows the construction of and access to global instances like the classical singleton, but fixing most of its [drawbacks](#comparision-with-the-classical-singleton).
 
-The following example illustrates the main usage of the library. It shows how to construct an instance of type `A`, make it globally accessible, accessing and destructing it.
+The following example illustrates the main usage of the library. It shows how to construct an instance of type `A`, make it globally accessible, access it and how it is destructed.
 
 ```cpp
 #include <globalInstances.h>
@@ -22,14 +22,12 @@ void main(){
 
 ```
 
-
-
 Besides the main usage above, the following aspects are also covered by this library: 
- - [how to do testing](#how-to-do-testing) 
- - [how to avoid two-phase initialization](#how-to-avoid-two-phase-initialization) 
- - [how to use multiple instances of the same type](#how-to-use-multiple-instances-of-the-same-type)
- - [how to handle invalid access](#how-to-handle-invalid-access)
- - [how to pass arguments to the constructor](#how-to-pass-arguments-to-the-constructor)
+ - [testing](#how-to-do-testing) 
+ - [avoid two-phase initialization](#how-to-avoid-two-phase-initialization) 
+ - [use multiple instances of the same type](#how-to-use-multiple-instances-of-the-same-type)
+ - [handle invalid access](#how-to-handle-invalid-access)
+ - [pass arguments to the constructor](#how-to-pass-arguments-to-the-constructor)
 
 The remainder of the document discusses the library in more detail.
 
@@ -124,7 +122,7 @@ void bar_test(){
 So for the scope of `bar_test()` all calls to `global::instance<A>()` are directed to an instance of `A_mock`. After the end of the scope of `bar_test()` calls to  `global::instance<A>()` will end up in the original instance of `A`.
 
 ## How to Avoid Two-Phase Initialization
-On larger projects some of the global instances usually access each other during their construction. In the following example, a class `A` accesses globally an instance of type `B` during its construction and vice versa:
+On larger projects some of the global instances usually access each other during their construction. In the following example, the constructor of type `A` accesses the global instance of type `B` and vice versa:
 
 ```cpp
 struct A{
@@ -148,13 +146,47 @@ struct B{
 };
 
 void main(){
-                
  global::Instance<A> a;     // throws since no instance of B available yet
  global::Instance<B> b;     
- 
 }
 ```
-This kind of dependency loop is usually resolved by introducing some form of init-function which is called later on after the construction of the depending instances is complete. This so called two-phase initialization can get quite complex and brittle on bigger projects and can be avoided by using the deferred invocation mechanism provided by the library. With it, a non-throwing version of the example above could look like that: 
+
+This initialization loop is usually resolved by adding an init-function to `A` which is invoked externally after the construction of the instance of type `B` is completed. This is called two-phase initialization:
+
+```cpp
+struct A{
+
+  A(){}
+  void init{ global::instance<B>()->foo(); } 
+
+  void bar();
+};
+
+
+struct B{
+
+ B(){
+   global::instance<A>()->bar(); 
+ }
+ 
+ void foo();
+ 
+};
+
+void main(){
+ global::Instance<A> a;     // throws since no instance of B available yet
+ global::Instance<B> b;    
+ global::instance<A>()->init();
+}
+```
+
+If projects get bigger, the concept is likely to be extended to mulitple initialization steps, usually triggered by some form of runlevels. 
+
+As one can imagine, this gets complex rather quickly the reason beeing that the initialization logic is dispersed from the construtors to various locations in the code. In the example the intitialization is dispersed from `A::A()` to function `main()` and function `A::init()`. 
+
+Therefore, the libray offers a queuing mechanism which allows to defer initialization steps until the condition for an initialization step is met e.g. a certain global instance becomes available. 
+
+Using the mechanism therefore enables us to keep the initialization code together in the constructor: 
 
 ```cpp
 struct A{
@@ -189,10 +221,11 @@ void main(){
  
 }
 ```
+Although the example above might not appear to be more readable on first sight, it will be if the projects get bigger with more initialization steps and more complex conditions and some form of runlevels.
 
-Note that the order of construction of `a` and `b` can be changed without affecting the result. This is one of the advantages of this approach.
+Additional notes:
 
-Also note that defering calls can be nested which allows deferring execution until multiple instances are available e.g. a dependence of a class `C` on `A` __and__ `B` could be expressed as:
+Defering calls can be nested which allows deferring execution until multiple instances become available e.g. a dependence of a class `C` on `A` __and__ `B` could be expressed as:
 
 ```cpp
 struct C{
@@ -210,6 +243,7 @@ struct C{
 };
 
 ```
+
 
 ## How to Pass Arguments to the Constructor
 
@@ -458,11 +492,11 @@ The indicator instance of type `RunelevelX` is used here to indicate a certain p
 
 The library set out to adress the following minor and major drawbacks of the classical singleton:
  - testability
- - sometimes requires two-phase initialization
- - missing control over construction sequence of instances
- - missing control over destruction sequence of instances
- - destruction during static deinitialization
- - no arguments to the constructor of instances
+ - requiring a two-phase initialization
+ - lack of control over the construction sequence of instances
+ - lack of control over the destruction sequence of instances
+ - mandatory destruction during static deinitialization
+ - no arguments can be passed to the constructor of instances
 
 So the main difference to the classical singleton lies in the improvement of these drawbacks.
 
