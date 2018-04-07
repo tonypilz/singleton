@@ -12,29 +12,15 @@ class InstancePointer {
 
 public:
 
-    using NullPtrAccessHandler = std::function<Ptr()>;
-
     explicit InstancePointer(){}
 
     bool operator==(Ptr const& t) const{ return val == t;}
     bool operator!=(Ptr const& t) const{ return val != t;}
 
-    operator bool() const{
-        return val!=nullptr;
-    }
-    operator Ptr() const{
-        return operator ->();
-    }
+    operator bool() const{ return val!=nullptr; }
+    operator Ptr() const{  return operator ->(); }
 
-    Ptr operator->() const{
-        if (val==nullptr){
-            if (onNullPtrAccess) return onNullPtrAccess();
-            detail::staticValue<NullptrAccessHandler>().handler(); //global handler is installed by default
-            return nullptr;
-        }
-        return val;
-    }
-
+    Ptr operator->() const{ return val!=nullptr ? val : handleNull(); }
 
     template<typename Cond, typename Func>
     void addDeferredOperation(Cond c, Func func){
@@ -48,16 +34,23 @@ public:
         deferredOperations.conditionsChanged(val);
     }
 
-
     template<typename Func >
     void ifUnavailable(Func func){
         deferredOperations.ifUnavailable(func);
         deferredOperations.conditionsChanged(val);
     }
 
-    NullPtrAccessHandler onNullPtrAccess;
+    std::function<Ptr()> onNullPtrAccess;
+    std::function<void()> onNullPtrAccessUntyped;
 
 private:
+
+    Ptr handleNull() const{
+        if (onNullPtrAccess) return onNullPtrAccess();
+        if (onNullPtrAccessUntyped) onNullPtrAccessUntyped(); //we do not return
+        detail::staticValue<NullptrAccessHandler>().handler(); //global handler is installed by default
+        return nullptr;
+    }
 
     Ptr rawPtr() const{
         return val;
