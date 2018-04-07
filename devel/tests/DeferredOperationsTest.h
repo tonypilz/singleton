@@ -22,6 +22,8 @@ private slots:
     void recursiveExecutionWorks();
     void recursiveExecutionWorks1();
 
+    void instanceBeforeIsPassedCorrectly();
+
 
 
 };

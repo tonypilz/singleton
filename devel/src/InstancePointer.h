@@ -31,22 +31,28 @@ public:
     T* operator->(){ return instancePtr!=nullptr ? instancePtr : handleNull(); }
 
 
+    template<typename Op >
+    void addDeferredOperationWithArgBefore(Op func){
+        deferredOperations.addDeferredOperationWithArgBefore(func);
+        deferredOperations.conditionsChanged(instancePtr,instancePtr);
+    }
+
     template<typename DeferredOperation>
     void addDeferredOperation(DeferredOperation op){
         deferredOperations.addDeferredOperation(op);
-        deferredOperations.conditionsChanged(instancePtr);
+        deferredOperations.conditionsChanged(instancePtr,instancePtr);
     }
 
     template<typename Func >
     void ifAvailable(Func func){
         deferredOperations.ifAvailable(func);
-        deferredOperations.conditionsChanged(instancePtr);
+        deferredOperations.conditionsChanged(instancePtr,instancePtr);
     }
 
     template<typename Func >
     void ifUnavailable(Func func){
         deferredOperations.ifUnavailable(func);
-        deferredOperations.conditionsChanged(instancePtr);
+        deferredOperations.conditionsChanged(instancePtr,instancePtr);
     }
 
     std::function<T*()> onNullPtrAccess;
@@ -63,8 +69,9 @@ private:
 
     InstancePointer& operator=(T* t){
         if (instancePtr == t) return *this; //nothing changed
+        auto before = instancePtr;
         instancePtr = t;
-        deferredOperations.conditionsChanged(instancePtr);
+        deferredOperations.conditionsChanged(before, instancePtr);
         return *this;
     }
 

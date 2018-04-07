@@ -4,8 +4,8 @@
 
 using namespace global;
 
-constexpr auto condition_not_met = DeferredOperationState::pending;
-constexpr auto operation_executed = DeferredOperationState::finished;
+constexpr auto pending = DeferredOperationState::pending;
+constexpr auto finished = DeferredOperationState::finished;
 
 InstanceTest::InstanceTest(QObject *parent) : QObject(parent)
 {
@@ -264,9 +264,9 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
 
     instance<A>().addDeferredOperation(
                 [&](A* const&p){
-                    if (p!=&a) return condition_not_met;
+                    if (p!=&a) return pending;
                     ++funcCallCount;
-                    return operation_executed;});
+                    return finished;});
 
     QCOMPARE(funcCallCount,1);
 
@@ -280,9 +280,9 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
 
     instance<A>().addDeferredOperation(
                 [&](A* const&p){
-                    if (p!=&a) return condition_not_met;
+                    if (p!=&a) return pending;
                     ++funcCallCount;
-                    return operation_executed;});
+                    return finished;});
 
     detail::InstanceRegistration<A> registration(&a);
 
@@ -299,10 +299,10 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
 
 
     instance<A,Sub>().addDeferredOperation(
-                [&](A* const&p){
-                    if (p!=&a) return condition_not_met;
+                [&]( A* const&p){
+                    if (p!=&a) return pending;
                     ++funcCallCount;
-                    return operation_executed;});
+                    return finished;});
 
     QCOMPARE(funcCallCount,1);
 }
@@ -315,9 +315,9 @@ void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
 
     instance<A,Sub>().addDeferredOperation(
                 [&](A* const&p){
-                    if (p!=&a) return condition_not_met;
+                    if (p!=&a) return pending;
                     ++funcCallCount;
-                    return operation_executed;});
+                    return finished;});
 
     detail::InstanceRegistration<A,Sub> registration(&a);
 
@@ -333,15 +333,15 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
     bool enabled = false;
 
     auto func1 = [&](A* const&p){
-                        if (!enabled) return condition_not_met;
-                        if (p!=&a) return condition_not_met;
+                        if (!enabled) return pending;
+                        if (p!=&a) return pending;
                         ++funcCallCount1;
-                        return operation_executed;};
+                        return finished;};
     auto func2 = [&](A* const&p){
-                        if (!enabled) return condition_not_met;
-                        if (p!=nullptr) return condition_not_met;
+                        if (!enabled) return pending;
+                        if (p!=nullptr) return pending;
                         ++funcCallCount2;
-                        return operation_executed;};
+                        return finished;};
     const int n = 20;
     for(int i = 0;i<n;++i){
         instance<A,Sub>().addDeferredOperation(func1);
@@ -375,15 +375,15 @@ void InstanceTest::recursiveQueuingWorks()
     int funcCallCount2 = 0;
 
     auto func2 = [&](A* const&p){
-                    if (p!=nullptr) return condition_not_met;
+                    if (p!=nullptr) return pending;
                     ++funcCallCount2;
-                    return operation_executed;};
+                    return finished;};
 
     auto func1 = [&](A* const&p){
-                    if (p!=&a) return condition_not_met;
+                    if (p!=&a) return pending;
                     instance<A,Sub>().addDeferredOperation(func2);
                     ++funcCallCount1;
-                    return operation_executed;};
+                    return finished;};
 
     instance<A,Sub>().addDeferredOperation(func1);
 
@@ -450,6 +450,46 @@ void InstanceTest::instanceRefWorks()
         QCOMPARE(val,1);
     }
 
+    {
+        const auto val = (*global::instance<Map,Sub>())["hans"].x;
+        QCOMPARE(val,1);
+    }
+
 
 }
+void InstanceTest::instanceBeforeIsAvailableToDefferedOperations()
+{
+    A a,b;
 
+    A* before = nullptr;
+    A* current = nullptr;
+
+    constexpr A* null = nullptr;
+
+    instance<A,Sub>().addDeferredOperationWithArgBefore(
+                [&](A* b, A* c){
+                    before = b;
+                    current = c;
+                    return pending;
+    });
+
+    QCOMPARE(before,null);
+    QCOMPARE(current,null);
+
+    {
+        detail::InstanceRegistration<A,Sub> registration(&a);
+
+        QCOMPARE(before,null);
+        QCOMPARE(current,&a);
+
+        detail::ReplacingInstanceRegistration<A,Sub> registration1(&b);
+
+        QCOMPARE(before,&a);
+        QCOMPARE(current,&b);
+    }
+
+    QCOMPARE(before,&a);
+    QCOMPARE(current,null);
+
+
+}

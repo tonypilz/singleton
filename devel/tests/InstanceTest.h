@@ -60,6 +60,8 @@ private slots:
 
     void instanceRefWorks();
 
+    void instanceBeforeIsAvailableToDefferedOperations();
+
 };
 
 #endif // INSTANCETEST_H
