@@ -121,6 +121,8 @@ void bar_test(){
 
 So for the scope of `bar_test()` all calls to `global::instance<A>()` are directed to an instance of `A_mock`. After the end of the scope of `bar_test()` calls to  `global::instance<A>()` will end up in the original instance of `A`.
 
+Note that `detail::ReplacingInstanceRegistration<A> reg(nullptr);` can be used to unset temporarily the current instance of `A`.
+
 ## How to Avoid Two-Phase Initialization
 On larger projects some of the global instances usually access each other during their construction. In the following example, the constructor of type `A` accesses the global instance of type `B` and vice versa:
 
@@ -263,9 +265,9 @@ struct D{
  void baz();
 };
 ```
-The deferred operation will be called if the instance of `global::instance<A>()` changes until `DeferredOperationState::finished` is returned by the operation.
+The deferred operation will be called each time the instance of `global::instance<A>()` changes until `DeferredOperationState::finished` is returned by the operation.
 
-
+Also note that pending deferred operations for an instance `A` will be reexecuted if some operation was finished. 
 
 ## How to Pass Arguments to the Constructor
 
@@ -326,9 +328,22 @@ void main(){
 
 }
 ```
-In the example above a new dummy-instance is created and used during the invalid access  instead of throwing an exception.
+In the example above a new dummy-instance of type `A` is created and used during the invalid access instead of throwing an exception.
 
-A second possiblity to change the default behaviour is shown in the following example:
+The same is possible with an untyped handler which will be called afterwards if defined: 
+```cpp
+void main(){
+
+ struct A{ void foo(){} };
+ 
+ global::instance<A>().onNullPtrAccessUntyped =
+          [](){ std::cout<<"oops\n" };   // define a custom behaviour on invalid access
+ 
+ global::instance<A>()->foo();             // invalid access
+
+}
+```
+The untyped handler can either throw or do nothing which invokes the global handler, which can also be customized:
 ```cpp
 void main(){
 
@@ -340,9 +355,8 @@ void main(){
 
 }
 ```
-The difference between both is that the first one is specific for type `A` and will be called first. If it is not defined the second handler is called, which handles errors for all types. So changing the second one will change the invalid access behaviour for all types which do not have a type-specific handler.
+The first two handlers are effective only for `global::instance<A>()`. The difference between a typed handler and an untyped one is that the typed one knows its type `A` and can therefore return an alterantive instance of `A` to the caller. It will therefore be called prior to the others. If it is not defined the untyped handlers are called, first the local one and then the global one. So customizing the global handler will change the handling of invalid access for all types which do not have a local handlers defined.
 
-And since the second hanlder is used for all types it cannot provide an alternative instance to be used by the caller. 
 
 ## Various Aspects
 In this paragraph some minor aspects to using this library will be discussed.
@@ -381,7 +395,8 @@ void makeA{
     // construction in a multithreaded environment
     static std::mutex mutex;
     mutex.lock();
-    static auto a = new global::Instance<A>();  
+    static A* a = nullptr;
+    if (a==nullptr) a = new global::Instance<A>();  
     mutex.unlock();
 }
 
@@ -505,7 +520,7 @@ void bar() {
 ```
 As can be seen in the example, the instance of `GlobalInstances` has two purposes. First, constructing and destructing all global instances and second, serve as indicater if all global instances have been fully constructed. It also helps to avoid cluttering the main function with the construction code of the global instances.
 
-The indicator instance of type `RunelevelX` is used here to indicate a certain program startup and shutdown state. Therefore it can be used to trigger a two phase initialization. However, as discussed in [this section](#how-to-avoid-two-phase-initialization), a two phase initialization should be avoided if possible which is why there should rarely be the need for one. 
+The indicator instance of type `RunelevelX` is used here to indicate a certain program startup and shutdown state. Therefore it can be used to trigger a two phase initialization. However, as discussed in [this section](#how-to-avoid-two-phase-initialization), a two phase initialization should be avoided if possible which is why there should rarely be the need for an indicator instance. 
 
 ### Customizing the Library
  Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
@@ -581,12 +596,12 @@ indep. class = independed free standing class(es) which do not require inheritan
 We begin with the accessor function, which has the signature
 
 ```cpp
-detail::InstancePointer<A*>& instance();
+detail::InstancePointer<A>& instance();
 ```
 
-It returns a reference to a static object of type `InstancePointer<A*>` which is created on the first time the method is called. The object holds the pointer to the actual instance of type `A` which is accessed by calling `operator->` on it. If no instance of type `A` was registered before calling `operator->` the respective error handlers will be triggered. The class `InstancePointer<A*>` also provides means to register callable objects which are called if the pointer to the actual instance changes. This enables the deferred calling mechanism. 
+It returns a reference to a static object of type `InstancePointer<A>` which is created on the first time the method is called. The object holds the pointer to the actual instance of type `A` which is accessed by calling `operator->` on it. If no instance of type `A` was registered before calling `operator->` the respective error handlers will be triggered. The class `InstancePointer<A>` also provides means to register callable objects which are called if the pointer to the actual instance changes. This enables the deferred calling mechanism. 
 
-What we have not seen so far is how an instance of type `A` gets registered to the static object of type `InstancePointer<A*>`. This is done by the second of the two main expressions, namely `global::Instance<A>` which constructs an instance of the following type:  
+What we have not seen so far is how an instance of type `A` gets registered to the static object of type `InstancePointer<A>`. This is done by the second of the two main expressions, namely `global::Instance<A>` which constructs an instance of the following type:  
 
 ```cpp
 struct Instance<A> {
@@ -598,7 +613,7 @@ struct Instance<A> {
 };
 ```
 
-As we can see `Instance<A>` contains the actualy instance `a` of type `A` as well as a registration object `reg` of type `InstanceRegistration<A>`. A registration object registers a given object pointer during its construction and deregisters it during its destruction. Thus `a` gets registered by `reg` after beeing constructed by `Instance<A>`. By register we mean that the address of the instance of a `A` is given to the respective static object of type `InstancePointer<A*>`. Likewise deregister means here clearing the respective address.   
+As we can see `Instance<A>` contains the actualy instance `a` of type `A` as well as a registration object `reg` of type `InstanceRegistration<A>`. A registration object registers a given object pointer during its construction and deregisters it during its destruction. Thus `a` gets registered by `reg` after beeing constructed by `Instance<A>`. By register we mean that the address of the instance of a `A` is given to the respective static object of type `InstancePointer<A>`. Likewise deregister means here clearing the respective address.   
 
 This concludes the description of the basic mechanism. The rest of the functionality is a detail around the just described central mechanism, eg. error handling and checking. 
 
