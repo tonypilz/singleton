@@ -18,9 +18,9 @@ void DeferredOperationsTest::argumentIsPassedToEachElement()
     A a;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
-    op.addDeferredOperation([&](A const&e){ out1 = &e; return operation_executed; });
-    op.addDeferredOperation([&](A const&e){ out2 = &e; return operation_executed; });
-    op.conditionsChanged(a);
+    op.addDeferredOperation([&](A const*e){ out1 = e; return operation_executed; });
+    op.addDeferredOperation([&](A const*e){ out2 = e; return operation_executed; });
+    op.conditionsChanged(&a);
     QCOMPARE(out1,&a);
     QCOMPARE(out2,&a);
 }
@@ -33,12 +33,12 @@ void DeferredOperationsTest::falseConditionsAreRexecuted()
     A a;
     int count = 0;
 
-    op.addDeferredOperation([&](A const&){++count; return condition_not_met;});
+    op.addDeferredOperation([&](A const*){++count; return condition_not_met;});
 
-    op.conditionsChanged(a);
+    op.conditionsChanged(&a);
     QCOMPARE(count,1);
 
-    op.conditionsChanged(a);
+    op.conditionsChanged(&a);
     QCOMPARE(count,2);
 
 }
@@ -50,12 +50,12 @@ void DeferredOperationsTest::trueConditionsAreExecutedOnce()
     A a;
     int count = 0;
 
-    op.addDeferredOperation([&](A const&){++count; return operation_executed;});
+    op.addDeferredOperation([&](A const*){++count; return operation_executed;});
 
-    op.conditionsChanged(a);
+    op.conditionsChanged(&a);
     QCOMPARE(count,1);
 
-    op.conditionsChanged(a);
+    op.conditionsChanged(&a);
     QCOMPARE(count,1);
 }
 
@@ -67,23 +67,23 @@ void DeferredOperationsTest::recursiveExecutionWorks()
     const A* out1 = nullptr;
     const A* out2 = nullptr;
 
-    op.addDeferredOperation([&](A const&e1){
-        out1 = &e1;
-        op.addDeferredOperation([&](A const&e2) {
-            out2 = &e2;
+    op.addDeferredOperation([&](A const*e1){
+        out1 = e1;
+        op.addDeferredOperation([&](A const*e2) {
+            out2 = e2;
             return operation_executed;
         });
         return operation_executed;
     });
 
-    op.conditionsChanged(a1);
+    op.conditionsChanged(&a1);
     QCOMPARE(out1,&a1);
     QCOMPARE(out2,static_cast<A*>(nullptr));
 
     out1 = nullptr;
     out2 = nullptr;
 
-    op.conditionsChanged(a2);
+    op.conditionsChanged(&a2);
     QCOMPARE(out1,static_cast<A*>(nullptr));
     QCOMPARE(out2,&a2);
 
@@ -98,23 +98,23 @@ void DeferredOperationsTest::recursiveExecutionWorks1()
     const A* out1 = nullptr;
     const A* out2 = nullptr;
 
-    op.addDeferredOperation([&](A const&e1){
-        out1 = &e1;
-        op.addDeferredOperation([&](A const&e2) {
-            out2 = &e2;
+    op.addDeferredOperation([&](A const*e1){
+        out1 = e1;
+        op.addDeferredOperation([&](A const*e2) {
+            out2 = e2;
             return operation_executed;
         });
         return operation_executed;
     });
 
-    op.conditionsChanged(a1);
+    op.conditionsChanged(&a1);
     QCOMPARE(out1,&a1);
     QCOMPARE(out2,static_cast<A*>(nullptr));
 
     out1 = nullptr;
     out2 = nullptr;
 
-    op.conditionsChanged(a2);
+    op.conditionsChanged(&a2);
     QCOMPARE(out1,static_cast<A*>(nullptr));
     QCOMPARE(out2,&a2);
 }

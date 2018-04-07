@@ -12,7 +12,7 @@ enum class DeferredOperationState{
 
 namespace detail {
 
-template<typename T>
+template<typename TargetInstance>
 class DeferredOperations {
 public:
 
@@ -24,7 +24,7 @@ public:
     template<typename Func >
     void ifAvailable(Func func){
         operations.emplace_back(
-                    [func](T const& t) {
+                    [func](TargetInstance* t) {
                         if (t==nullptr) return DeferredOperationState::pending;
                         func(*t);
                         return DeferredOperationState::finished;
@@ -34,7 +34,7 @@ public:
     template<typename Func >
     void ifUnavailable(Func func){
         operations.emplace_back(
-                    [func](T const& t) {
+                    [func](TargetInstance* t) {
                         if (t!=nullptr) return DeferredOperationState::pending;
                         func();
                         return DeferredOperationState::finished;
@@ -42,7 +42,7 @@ public:
     }
 
 
-    void conditionsChanged(T const& t){ //while find
+    void conditionsChanged(TargetInstance* t){ //while find
         auto copy = std::move(operations);
         operations.clear();
         for(auto const& op:copy){
@@ -53,7 +53,7 @@ public:
 
 private:
 
-    using Operation = DeferredOperationState(T const&);
+    using Operation = DeferredOperationState(TargetInstance*); //todo remove const
     using Operations = std::list<std::function<Operation>>;
     Operations operations;
 

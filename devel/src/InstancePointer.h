@@ -75,7 +75,7 @@ private:
     InstancePointer(ClassType const&) = delete;
     ClassType const& operator=(ClassType const&) = delete;
 
-    detail::DeferredOperations<T*> deferredOperations; //todo
+    detail::DeferredOperations<T> deferredOperations; //todo
 
     T* instancePtr = nullptr;
 };
