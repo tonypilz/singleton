@@ -23,6 +23,10 @@ public:
     explicit operator const T*() const{  return operator ->(); }
     explicit operator T*() {  return operator ->(); }
 
+    const T& operator*() const& { return *instancePtr;}
+    T& operator*() & { return *instancePtr;}
+
+
     const T* operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
     T* operator->(){ return instancePtr!=nullptr ? instancePtr : handleNull(); }
 
