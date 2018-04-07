@@ -71,13 +71,13 @@ void RegistrationTest::ReplacingInstanceRegistrationReplacesInstanceTemporarily(
     A a1,a2;
 
     global::detail::InstanceRegistration<A> registration(&a1);
-    QVERIFY(global::instance<A>()==&a1);
+    QVERIFY(static_cast<A*>(global::instance<A>())==&a1);
     {
         global::detail::ReplacingInstanceRegistration<A> registration(&a2);
-        QVERIFY(global::instance<A>()==&a2);
+        QVERIFY(static_cast<A*>(global::instance<A>())==&a2);
     }
 
-   QVERIFY(global::instance<A>()==&a1);
+   QVERIFY(static_cast<A*>(global::instance<A>())==&a1);
 
 }
 
@@ -90,12 +90,12 @@ void RegistrationTest::replacingInstanceSubRegistrationReplacesInstanceTemporari
 
     global::detail::InstanceRegistration<A,MySub> registration(&a1);
 
-    {auto same = global::instance<A,MySub>()==&a1; QVERIFY(same );}
+    {auto same = static_cast<A*>(global::instance<A,MySub>())==&a1; QVERIFY(same );}
     {
         global::detail::ReplacingInstanceRegistration<A,MySub> registration(&a2);
-        {auto same = global::instance<A,MySub>()==&a2; QVERIFY(same );}
+        {auto same = static_cast<A*>(global::instance<A,MySub>())==&a2; QVERIFY(same );}
     }
-    {auto same = global::instance<A,MySub>()==&a1; QVERIFY(same );}
+    {auto same = static_cast<A*>(global::instance<A,MySub>())==&a1; QVERIFY(same );}
 
 
 }
@@ -109,7 +109,7 @@ void RegistrationTest::registrationsCanBeChanged()
     global::detail::ReplacingInstanceRegistration<A> registration(&a1);
     registration.registerInstance(&a2);
 
-    {auto same = global::instance<A>()==&a2; QVERIFY(same);}
+    {auto same = static_cast<A*>(global::instance<A>())==&a2; QVERIFY(same);}
 
 }
 

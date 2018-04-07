@@ -7,21 +7,24 @@
 namespace global {
 namespace detail {
 
-template<typename Ptr>
+template<typename T>
 class InstancePointer {
 
 public:
 
     explicit InstancePointer(){}
 
-    bool operator==(Ptr const& t) const{ return instancePtr == t;}
-    bool operator!=(Ptr const& t) const{ return instancePtr != t;}
-
     operator bool() const{ return instancePtr!=nullptr; }
-    operator Ptr() const{  return operator ->(); }
 
-    const Ptr operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
-    Ptr operator->(){ return instancePtr!=nullptr ? instancePtr : handleNull(); }
+    bool operator==(T const* t) const{  return instancePtr==t;}
+    bool operator!=(T const* t) const{  return instancePtr!=t;}
+
+
+    explicit operator const T*() const{  return operator ->(); }
+    explicit operator T*() {  return operator ->(); }
+
+    const T* operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
+    T* operator->(){ return instancePtr!=nullptr ? instancePtr : handleNull(); }
 
 
     template<typename DeferredOperation>
@@ -42,19 +45,19 @@ public:
         deferredOperations.conditionsChanged(instancePtr);
     }
 
-    std::function<Ptr()> onNullPtrAccess;
+    std::function<T*()> onNullPtrAccess;
     std::function<void()> onNullPtrAccessUntyped;
 
 private:
 
-    Ptr handleNull() const{
+    T* handleNull() const{
         if (onNullPtrAccess) return onNullPtrAccess();
         if (onNullPtrAccessUntyped) onNullPtrAccessUntyped(); //if this returns we execute global handler
         detail::staticValue<NullptrAccessHandler>().handler(); //global handler should always be there
         return nullptr; //shouldnt be reached
     }
 
-    InstancePointer& operator=(Ptr const& t){
+    InstancePointer& operator=(T* t){
         if (instancePtr == t) return *this; //nothing changed
         instancePtr = t;
         deferredOperations.conditionsChanged(instancePtr);
@@ -64,12 +67,13 @@ private:
     template<typename, typename>
     friend class ReplacingInstanceRegistration;
 
-    InstancePointer(InstancePointer<Ptr>const&) = delete;
-    InstancePointer<Ptr>const& operator=(InstancePointer<Ptr>const&) = delete;
+    using ClassType = InstancePointer<T>;
+    InstancePointer(ClassType const&) = delete;
+    ClassType const& operator=(ClassType const&) = delete;
 
-    detail::DeferredOperations<Ptr> deferredOperations;
+    detail::DeferredOperations<T*> deferredOperations; //todo
 
-    Ptr instancePtr = nullptr;
+    T* instancePtr = nullptr;
 };
 
 
