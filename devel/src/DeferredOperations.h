@@ -10,10 +10,14 @@ namespace detail {
 
 class UnexpectedNonNullInstance : public std::exception {};
 
+enum class ConditionState{
+    condition_not_met,
+    operation_executed
+};
+
 template<typename T>
 class DeferredOperations {
 public:
-
 
     template<typename Cond, typename Func>
     void addDeferredOperation(Cond c, Func func){

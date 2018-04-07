@@ -50,7 +50,8 @@ template <typename T, typename Sub = staticValueSubDefault> T &staticValue() {
   return t;
 }
 
-class InvalidRead : public std::exception {};
+class bad_optional_access
+ : public std::exception {};
 
 template <typename T> class OptionalValue {
 
@@ -65,7 +66,8 @@ public:
 
   explicit operator T() const {
     if (!isSet)
-      throw InvalidRead();
+      throw bad_optional_access
+();
     return val;
   }
 

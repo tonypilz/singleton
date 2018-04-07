@@ -6,33 +6,38 @@
 namespace global {
 namespace detail {
 
-class InvalidRead : public std::exception {};
+class bad_optional_access_impl : public std::exception {};
+
+using bad_optional_access = bad_optional_access_impl; //use c++17 version if available
 
 template<typename T>
-class OptionalValue {
+class OptionalValueImpl {
 
 public:
 
-    explicit OptionalValue(){}
+    explicit OptionalValueImpl(){}
 
-    OptionalValue& operator=(T const& t){
+    OptionalValueImpl& operator=(T const& t){
         val = t;
-        isSet = true;
+        m_hasValue = true;
         return *this;
     }
 
     explicit operator T() const{
-        if (!isSet)  throw InvalidRead();
+        if (!m_hasValue)  throw bad_optional_access();
         return val;
     }
 
-    bool isValueSet() const{return isSet;}
-    void unsetValue(){ isSet = false;}
+    bool has_value() const{return m_hasValue;}
+    void reset(){ m_hasValue = false;}
 
 private:
     T val;
-    bool isSet = false;
+    bool m_hasValue = false;
 };
+
+template<typename T>
+using optional = OptionalValueImpl<T>; //use c++17 version if available
 
 }
 }

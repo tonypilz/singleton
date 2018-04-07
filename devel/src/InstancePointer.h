@@ -14,30 +14,30 @@ public:
 
     explicit InstancePointer(){}
 
-    bool operator==(Ptr const& t) const{ return val == t;}
-    bool operator!=(Ptr const& t) const{ return val != t;}
+    bool operator==(Ptr const& t) const{ return instancePtr == t;}
+    bool operator!=(Ptr const& t) const{ return instancePtr != t;}
 
-    operator bool() const{ return val!=nullptr; }
+    operator bool() const{ return instancePtr!=nullptr; }
     operator Ptr() const{  return operator ->(); }
 
-    Ptr operator->() const{ return val!=nullptr ? val : handleNull(); }
+    Ptr operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
 
     template<typename Cond, typename Func>
     void addDeferredOperation(Cond c, Func func){
         deferredOperations.addDeferredOperation(c,func);
-        deferredOperations.conditionsChanged(val);
+        deferredOperations.conditionsChanged(instancePtr);
     }
 
     template<typename Func >
     void ifAvailable(Func func){
         deferredOperations.ifAvailable(func);
-        deferredOperations.conditionsChanged(val);
+        deferredOperations.conditionsChanged(instancePtr);
     }
 
     template<typename Func >
     void ifUnavailable(Func func){
         deferredOperations.ifUnavailable(func);
-        deferredOperations.conditionsChanged(val);
+        deferredOperations.conditionsChanged(instancePtr);
     }
 
     std::function<Ptr()> onNullPtrAccess;
@@ -47,19 +47,15 @@ private:
 
     Ptr handleNull() const{
         if (onNullPtrAccess) return onNullPtrAccess();
-        if (onNullPtrAccessUntyped) onNullPtrAccessUntyped(); //we do not return
-        detail::staticValue<NullptrAccessHandler>().handler(); //global handler is installed by default
-        return nullptr;
-    }
-
-    Ptr rawPtr() const{
-        return val;
+        if (onNullPtrAccessUntyped) onNullPtrAccessUntyped(); //if this returns we execute global handler
+        detail::staticValue<NullptrAccessHandler>().handler(); //global handler should always be there
+        return nullptr; //shouldnt be reached
     }
 
     InstancePointer& operator=(Ptr const& t){
-        if (val == t) return *this; //nothing changed
-        val = t;
-        deferredOperations.conditionsChanged(val);
+        if (instancePtr == t) return *this; //nothing changed
+        instancePtr = t;
+        deferredOperations.conditionsChanged(instancePtr);
         return *this;
     }
 
@@ -71,7 +67,7 @@ private:
 
     detail::DeferredOperations<Ptr> deferredOperations;
 
-    Ptr val = nullptr;
+    Ptr instancePtr = nullptr;
 };
 
 

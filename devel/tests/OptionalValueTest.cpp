@@ -2,8 +2,9 @@
 
 #include <src/globalInstances.h>
 
-using global::detail::OptionalValue;
-using global::detail::InvalidRead;
+using global::detail::optional;
+using global::detail::bad_optional_access
+;
 
 OptionalValueTest::OptionalValueTest(QObject *parent) : QObject(parent)
 {
@@ -12,18 +13,19 @@ OptionalValueTest::OptionalValueTest(QObject *parent) : QObject(parent)
 
 void OptionalValueTest::defaultConstructedValueNotSet()
 {
-    OptionalValue<A> a;
-    QCOMPARE(a.isValueSet(),false);
+    optional<A> a;
+    QCOMPARE(a.has_value(),false);
 }
 
 void OptionalValueTest::accessingInvalidValueThrows()
 {
 
      try{
-        OptionalValue<A> a;
+        optional<A> a;
         static_cast<A>(a);
      }
-    catch(InvalidRead const&){
+    catch(bad_optional_access
+ const&){
         return;
 
     }
@@ -36,20 +38,20 @@ void OptionalValueTest::accessingInvalidValueThrows()
 
 void OptionalValueTest::assignedValueIsValid()
 {
-    OptionalValue<A> a;
+    optional<A> a;
 
     A b;
     a = b;
-    QCOMPARE(a.isValueSet(),true);
+    QCOMPARE(a.has_value(),true);
 
 
 }
 
 void OptionalValueTest::ussettingAValueMakesItInvalid()
 {
-    OptionalValue<A> a;
+    optional<A> a;
     A b;
     a = b;
-    a.unsetValue();
-    QCOMPARE(a.isValueSet(),false);
+    a.reset();
+    QCOMPARE(a.has_value(),false);
 }

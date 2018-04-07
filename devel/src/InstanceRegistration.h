@@ -27,14 +27,14 @@ public:
 
     virtual void registerInstance(T* t){
         deregisterInstance();
-        replacedInstance = instance<T,Sub>().rawPtr();
+        replacedInstance = instance<T,Sub>().instancePtr;
         instance<T,Sub>() = t; //possibly deregisters again
     }
 
     virtual void deregisterInstance(){
-        if (replacedInstance.isValueSet()==false) return; //noting to do
+        if (replacedInstance.has_value()==false) return; //noting to do
         T *tmp = static_cast<T*>(replacedInstance);
-        replacedInstance.unsetValue();
+        replacedInstance.reset();
         instance<T,Sub>() = tmp; //possibly registers again
     }
 
@@ -42,7 +42,7 @@ private:
 
     ReplacingInstanceRegistration(ReplacingInstanceRegistration const&) = delete; //no copy
 
-    detail::OptionalValue<T*> replacedInstance;
+    detail::optional<T*> replacedInstance;
 
 };
 
