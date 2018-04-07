@@ -20,7 +20,9 @@ public:
     operator bool() const{ return instancePtr!=nullptr; }
     operator Ptr() const{  return operator ->(); }
 
-    Ptr operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
+    const Ptr operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
+    Ptr operator->(){ return instancePtr!=nullptr ? instancePtr : handleNull(); }
+
 
     template<typename DeferredOperation>
     void addDeferredOperation(DeferredOperation op){
