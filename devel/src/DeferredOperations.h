@@ -8,7 +8,7 @@ namespace detail {
 
 
 template<typename T>
-class ConditionalSingleShotOperations {
+class DeferredOperations {
 public:
 
     template<typename Op>

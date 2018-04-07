@@ -3,15 +3,15 @@ HEADERS += \
     $$PWD/TestMain.h \
     $$PWD/InstanceTest.h \
     $$PWD/RegistrationTest.h \
-    $$PWD/ConditionalSingleShotOperationsTest.h \
-    $$PWD/OptionalValueTest.h
+    $$PWD/OptionalValueTest.h \
+    $$PWD/DeferredOperations.h
 
 SOURCES += \
     $$PWD/TestMain.cpp \
     $$PWD/InstanceTest.cpp \
     $$PWD/RegistrationTest.cpp \
-    $$PWD/ConditionalSingleShotOperationsTest.cpp \
-    $$PWD/OptionalValueTest.cpp
+    $$PWD/OptionalValueTest.cpp \
+    $$PWD/DeferredOperations.cpp
 
 
 

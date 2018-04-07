@@ -1,7 +1,7 @@
 #pragma once
 
 #include "NullptrAccessHandler.h"
-#include "ConditionalSingleShotOperations.h"
+#include "DeferredOperations.h"
 #include <functional>
 
 namespace global {
@@ -13,11 +13,8 @@ template<typename Ptr>
 class InstancePointer {
 
 public:
-    using ValueType = Ptr;
-    using Classtype = InstancePointer<Ptr>;
 
     using NullPtrAccessHandler = std::function<Ptr()>;
-    using ValueChanged = std::function<void (Ptr const&)>;
 
     explicit InstancePointer(){}
 
@@ -44,11 +41,10 @@ public:
         return val;
     }
 
-
     template<typename Cond, typename Func>
     void ifAvailabilityChanged(Cond c, Func func){
         if (c(val)) {func(val); return;} // direct call if condition is met!s
-        changeOperations.add([c,func](Ptr const& t){ if (c(t)) {func(t); return true;} return false;});
+        deferredOperations.add([c,func](Ptr const& t){ if (c(t)) {func(t); return true;} return false;});
     }
 
     template<typename Func >
@@ -72,7 +68,7 @@ private:
     InstancePointer& operator=(Ptr const& t){
         if (val == t) return *this; //nothing changed
         val = t;
-        changeOperations(val);
+        deferredOperations(val);
         return *this;
     }
 
@@ -82,7 +78,7 @@ private:
     InstancePointer(InstancePointer<Ptr>const&) = delete;
     InstancePointer<Ptr>const& operator=(InstancePointer<Ptr>const&) = delete;
 
-    detail::ConditionalSingleShotOperations<Ptr> changeOperations;
+    detail::DeferredOperations<Ptr> deferredOperations;
 
     Ptr val = nullptr;
 };

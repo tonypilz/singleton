@@ -1,6 +1,6 @@
 #pragma once
 
-#define USE_SINGLE_HEADER
+//#define USE_SINGLE_HEADER
 
 
 #ifdef USE_SINGLE_HEADER
@@ -9,7 +9,7 @@
 
 #else
 
-#include "ConditionalSingleShotOperations.h"
+#include "DeferredOperations.h"
 #include "NullptrAccessHandler.h"
 #include "staticValue.h"
 #include "OptionalValue.h"

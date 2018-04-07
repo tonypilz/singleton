@@ -1,8 +1,8 @@
-#include "ConditionalSingleShotOperationsTest.h"
+#include "DeferredOperations.h"
 
 #include <src/globalInstances.h>
 
-using global::detail::ConditionalSingleShotOperations;
+using global::detail::DeferredOperations;
 
 ConditionalSingleShotOperationsTest::ConditionalSingleShotOperationsTest(QObject *parent) : QObject(parent)
 {
@@ -11,7 +11,7 @@ ConditionalSingleShotOperationsTest::ConditionalSingleShotOperationsTest(QObject
 
 void ConditionalSingleShotOperationsTest::argumentIsPassedToEachElement()
 {
-    ConditionalSingleShotOperations<A> op;
+    DeferredOperations<A> op;
 
     A a;
     const A* out1 = nullptr;
@@ -26,7 +26,7 @@ void ConditionalSingleShotOperationsTest::argumentIsPassedToEachElement()
 void ConditionalSingleShotOperationsTest::falseConditionsAreRexecuted()
 {
 
-    ConditionalSingleShotOperations<A> op;
+    DeferredOperations<A> op;
 
     A a;
     int count = 0;
@@ -43,7 +43,7 @@ void ConditionalSingleShotOperationsTest::falseConditionsAreRexecuted()
 
 void ConditionalSingleShotOperationsTest::trueConditionsAreExecutedOnce()
 {
-    ConditionalSingleShotOperations<A> op;
+    DeferredOperations<A> op;
 
     A a;
     int count = 0;
@@ -59,7 +59,7 @@ void ConditionalSingleShotOperationsTest::trueConditionsAreExecutedOnce()
 
 void ConditionalSingleShotOperationsTest::recursiveExecutionWorks()
 {
-    ConditionalSingleShotOperations<A> op;
+    DeferredOperations<A> op;
 
     A a1, a2;
     const A* out1 = nullptr;
@@ -90,7 +90,7 @@ void ConditionalSingleShotOperationsTest::recursiveExecutionWorks()
 
 void ConditionalSingleShotOperationsTest::recursiveExecutionWorks1()
 {
-    ConditionalSingleShotOperations<A> op;
+    DeferredOperations<A> op;
 
     A a1, a2;
     const A* out1 = nullptr;
