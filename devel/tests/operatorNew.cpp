@@ -1,7 +1,13 @@
 #include "operatorNew.h"
-#include <src/throwImpl.h>
+#include <src/globalInstances.h>
 #include <memory>
 
+
+int &newCallCount()
+{
+    static int i = 0;
+    return i;
+}
 
 
 void *operator new(std::size_t count)
@@ -16,18 +22,16 @@ void *operator new[](std::size_t count)
     return malloc(count);
 }
 
-void *operator new(std::size_t, const std::nothrow_t &)
+void *operator new(std::size_t count, const std::nothrow_t &)
 {
-    global::detail::do_throw(std::exception{});
+    global::detail::do_throw(std::exception{}); //unexpected
+    return malloc(count);
 }
 
-void *operator new[](std::size_t, const std::nothrow_t &)
+void *operator new[](std::size_t count, const std::nothrow_t &)
 {
-  global::detail::do_throw(std::exception{});
+    global::detail::do_throw(std::exception{}); //unexpected
+    return malloc(count);
 }
 
-int &newCallCount()
-{
-    static int i = 0;
-    return i;
-}
+

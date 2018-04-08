@@ -7,10 +7,8 @@
 #include <iostream>
 #include <cassert>
 #include <src/globalInstances.h>
-#include <src/globalInstances.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"
-#include <src/throwImpl.h>
 
 
 namespace global {

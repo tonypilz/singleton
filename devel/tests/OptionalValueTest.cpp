@@ -19,7 +19,7 @@ void OptionalValueTest::defaultConstructedValueNotSet()
 
 void OptionalValueTest::accessingInvalidValueThrows()
 {
-    #ifdef __cpp_exceptions
+#ifdef __cpp_exceptions
 
      try{
         optional<A> a;
@@ -34,6 +34,8 @@ void OptionalValueTest::accessingInvalidValueThrows()
 
     QFAIL("");
 
+#else
+    QSKIP("skipped due to disabled exceptions", SkipAll);
 #endif
 
 }

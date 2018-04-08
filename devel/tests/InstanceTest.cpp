@@ -1,6 +1,5 @@
 #include "InstanceTest.h"
 #include <src/globalInstances.h>
-#include <src/globalInstances.h>
 #include "operatorNew.h"
 
 using namespace global;
@@ -49,7 +48,7 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
 
 void InstanceTest::gettingNullThrowsWithoutHandler()
 {
-    #ifdef __cpp_exceptions
+#ifdef __cpp_exceptions
     class A{};
 
     try{
@@ -57,11 +56,14 @@ void InstanceTest::gettingNullThrowsWithoutHandler()
     }
     catch(NullptrAccess const&){}
     catch(...){ QFAIL("");}
-    #endif
+#else
+    QSKIP("skipped due to disabled exceptions", SkipAll);
+#endif
 }
 
 void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 {
+
 #ifdef __cpp_exceptions
 
     class UntypedTestHandler : public std::exception {};
@@ -79,7 +81,8 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 
     onNullptrAccess() = std::function<void()>{}; //cleanup installed handler
 
-
+#else
+    QSKIP("skipped due to disabled exceptions", SkipAll);
 #endif
 
 }
@@ -457,6 +460,7 @@ void InstanceTest::registeredInstanceAccessDoesNotInvokeOperatorNew()
 
 void InstanceTest::unregisteredInstanceAccessDoesNotInvokeOperatorNew()
 {
+
 #ifdef __cpp_exceptions
     const int newCountBefore = newCallCount();
 
@@ -470,6 +474,8 @@ void InstanceTest::unregisteredInstanceAccessDoesNotInvokeOperatorNew()
 
     QCOMPARE(newCountBefore,newCallCount());
 
+#else
+    QSKIP("skipped due to disabled exceptions", SkipAll);
 #endif
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdlib>
 #include <exception>
 #include <functional>
 #include <list>
@@ -7,38 +8,63 @@
 
 namespace global {
 
+#ifdef __cpp_exceptions
+namespace detail {
+
+template <typename T> T &do_throw(T t) { throw t; }
+
+} // namespace detail
+#else
+namespace detail {
+
+template <typename T> T &do_throw(T) { exit(1); }
+
+} // namespace detail
+#endif // __cpp_exceptions
+
 enum class DeferredOperationState { pending, finished };
 namespace detail {
 
 template <typename TargetInstance> class DeferredOperations {
 public:
-  template <typename Op> void addDeferredOperationWithArgBefore(Op func) {
+  template <typename Op>
+  void addDeferredOperationWithArgBefore(Op func, TargetInstance *current) {
+    if (func(current, current) == DeferredOperationState::finished)
+      return;
     operations.emplace_back(func);
   }
 
-  template <typename Op> void addDeferredOperation(Op func) {
+  template <typename Op>
+  void addDeferredOperation(Op func, TargetInstance *current) {
     addDeferredOperationWithArgBefore(
         [func](TargetInstance * /*before*/, TargetInstance *current) {
           return func(current);
-        });
+        },
+        current);
   }
 
-  template <typename Func> void ifAvailable(Func func) {
-    addDeferredOperation([func](TargetInstance *current) {
-      if (current == nullptr)
-        return DeferredOperationState::pending;
-      func(*current);
-      return DeferredOperationState::finished;
-    });
+  template <typename Func>
+  void ifAvailable(Func func, TargetInstance *current) {
+    addDeferredOperation(
+        [func](TargetInstance *current) {
+          if (current == nullptr)
+            return DeferredOperationState::pending;
+          func(*current);
+          return DeferredOperationState::finished;
+        },
+        current);
   }
 
-  template <typename Func> void ifUnavailable(Func func) {
-    addDeferredOperation([func](TargetInstance *current) {
-      if (current != nullptr)
-        return DeferredOperationState::pending;
-      func();
-      return DeferredOperationState::finished;
-    });
+  template <typename Func>
+  void ifUnavailable(Func func, TargetInstance *current) {
+    addDeferredOperation(
+        [func](TargetInstance *current) {
+          if (current != nullptr)
+            return DeferredOperationState::pending;
+          func();
+          return DeferredOperationState::finished;
+        },
+        current);
   }
 
   void conditionsChanged(TargetInstance *before,
@@ -68,14 +94,12 @@ private:
 class NullptrAccess : public std::exception {};
 struct NullptrAccessHandler {
   using type = std::function<void()>;
-  type handler = []() { throw NullptrAccess(); };
+  type handler = []() { detail::do_throw(NullptrAccess{}); };
 };
 
 namespace detail {
 
-struct staticValueSubDefault {};
-
-template <typename T, typename Sub = staticValueSubDefault> T &staticValue() {
+template <typename T> T &staticValue() {
   static T t;
   return t;
 }
@@ -98,7 +122,7 @@ public:
 
   explicit operator T() const {
     if (!m_hasValue)
-      throw bad_optional_access();
+      do_throw(bad_optional_access{});
     return val;
   }
 
@@ -137,24 +161,20 @@ public:
   }
 
   template <typename Op> void addDeferredOperationWithArgBefore(Op func) {
-    deferredOperations.addDeferredOperationWithArgBefore(func);
-    deferredOperations.conditionsChanged(instancePtr, instancePtr);
+    deferredOperations.addDeferredOperationWithArgBefore(func, instancePtr);
   }
 
   template <typename DeferredOperation>
   void addDeferredOperation(DeferredOperation op) {
-    deferredOperations.addDeferredOperation(op);
-    deferredOperations.conditionsChanged(instancePtr, instancePtr);
+    deferredOperations.addDeferredOperation(op, instancePtr);
   }
 
   template <typename Func> void ifAvailable(Func func) {
-    deferredOperations.ifAvailable(func);
-    deferredOperations.conditionsChanged(instancePtr, instancePtr);
+    deferredOperations.ifAvailable(func, instancePtr);
   }
 
   template <typename Func> void ifUnavailable(Func func) {
-    deferredOperations.ifUnavailable(func);
-    deferredOperations.conditionsChanged(instancePtr, instancePtr);
+    deferredOperations.ifUnavailable(func, instancePtr);
   }
 
   std::function<T *()> onNullPtrAccess;
@@ -180,7 +200,7 @@ private:
     return *this;
   }
 
-  template <typename, typename> friend class ReplacingInstanceRegistration;
+  template <typename> friend class ReplacingInstanceRegistration;
 
   using ClassType = InstancePointer<T>;
   InstancePointer(ClassType const &) = delete;
@@ -193,12 +213,10 @@ private:
 
 } // namespace detail
 
-template <typename T, typename Sub = detail::staticValueSubDefault>
-detail::InstancePointer<T> &instance() {
+template <typename T> detail::InstancePointer<T> &instance() {
   return detail::staticValue<detail::InstancePointer<T>>();
 }
-template <typename T, typename Sub = detail::staticValueSubDefault>
-T &instanceRef() {
+template <typename T> T &instanceRef() {
   return *detail::staticValue<detail::InstancePointer<T>>();
 }
 inline NullptrAccessHandler::type &onNullptrAccess() {
@@ -210,8 +228,7 @@ class RegisteringNullNotAllowed : public std::exception {};
 namespace detail {
 
 // replaces existing for the time it exised
-template <typename T, typename Sub = detail::staticValueSubDefault>
-class ReplacingInstanceRegistration {
+template <typename T> class ReplacingInstanceRegistration {
 
 public:
   ReplacingInstanceRegistration() {}
@@ -221,8 +238,8 @@ public:
 
   virtual void registerInstance(T *t) {
     deregisterInstance();
-    replacedInstance = instance<T, Sub>().instancePtr;
-    instance<T, Sub>() = t; // possibly deregisters again
+    replacedInstance = instance<T>().instancePtr;
+    instance<T>() = t; // possibly deregisters again
   }
 
   virtual void deregisterInstance() {
@@ -230,7 +247,7 @@ public:
       return; // noting to do
     T *tmp = static_cast<T *>(replacedInstance);
     replacedInstance.reset();
-    instance<T, Sub>() = tmp; // possibly registers again
+    instance<T>() = tmp; // possibly registers again
   }
 
 private:
@@ -242,10 +259,10 @@ private:
 
 // expects nullptr to be registered beforehand
 // expects registration-target not to be null
-template <typename T, typename Sub = detail::staticValueSubDefault>
-class InstanceRegistration : ReplacingInstanceRegistration<T, Sub> {
+template <typename T>
+class InstanceRegistration : ReplacingInstanceRegistration<T> {
 public:
-  using Superclass = ReplacingInstanceRegistration<T, Sub>;
+  using Superclass = ReplacingInstanceRegistration<T>;
   using Superclass::operator();
 
   InstanceRegistration() : Superclass() {}
@@ -253,21 +270,21 @@ public:
 
   void registerInstance(T *t) override {
 
-    if (instance<T, Sub>() != nullptr)
-      throw InstanceReplacementNotAllowed();
+    if (instance<T>() != nullptr)
+      do_throw(InstanceReplacementNotAllowed{});
     if (t == nullptr)
-      throw RegisteringNullNotAllowed();
+      do_throw(RegisteringNullNotAllowed{});
 
     Superclass::registerInstance(t);
   }
 };
 
-template <template <typename, typename> class RegistrationType, typename R,
-          typename Sub, typename T>
+template <template <typename> class RegistrationType, typename AccessType,
+          typename InstanceType>
 class RegisterdInstanceT {
 
-  T t;
-  RegistrationType<R, Sub> reg;
+  InstanceType t;
+  RegistrationType<AccessType> reg;
 
 public:
   template <typename... Args>
@@ -276,24 +293,15 @@ public:
 };
 
 } // namespace detail
-template <typename R, typename T = R,
-          typename Sub = detail::staticValueSubDefault>
-using Instance =
-    detail::RegisterdInstanceT<detail::InstanceRegistration, R, Sub, T>;
-template <typename R, typename T = R,
-          typename Sub = detail::staticValueSubDefault>
+template <typename AccessType, typename InstanceType = AccessType>
+using Instance = detail::RegisterdInstanceT<detail::InstanceRegistration,
+                                            AccessType, InstanceType>;
+template <typename AccessType, typename InstanceType = AccessType>
 using TestInstance =
-    detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, R, Sub,
-                               T>;
-template <typename R, typename Sub, typename T = R>
-using SubInstance =
-    detail::RegisterdInstanceT<detail::InstanceRegistration, R, Sub, T>;
-template <typename R, typename Sub, typename T = R>
-using SubTestInstance =
-    detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration, R, Sub,
-                               T>;
+    detail::RegisterdInstanceT<detail::ReplacingInstanceRegistration,
+                               AccessType, InstanceType>;
 #define GLOBAL_INSTANCE_IS_FRIEND                                              \
-  template <template <typename, typename> class, typename, typename, typename> \
+  template <template <typename, typename> class, typename, typename>           \
   friend class ::global::detail::RegisterdInstanceT
 
 } // namespace global

@@ -24,7 +24,9 @@ void RegistrationTest::leavingTheScopeOfASingleInstanceRegistrationDeregistersIn
 
 void RegistrationTest::SingleInstanceRegistrationAllowsOnlySingleRegistration()
 {
+
 #ifdef __cpp_exceptions
+
     class A{};
     A a;
 
@@ -35,7 +37,8 @@ void RegistrationTest::SingleInstanceRegistrationAllowsOnlySingleRegistration()
     catch(global::InstanceReplacementNotAllowed const&){}
     catch(...){ QFAIL("");}
 
-
+#else
+    QSKIP("skipped due to disabled exceptions", SkipAll);
 #endif
 
 }
@@ -91,6 +94,8 @@ void RegistrationTest::InstanceBasicallyWorks()
         QFAIL("");
     }
 
+#else
+    QSKIP("skipped due to disabled exceptions", SkipAll);
 #endif
 
 }

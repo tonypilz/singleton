@@ -15,10 +15,10 @@ T& do_throw(T t){
 
 #else
 
+#include <cstdlib>
+
 namespace global {
 namespace detail {
-
-#include <cstdlib>
 
 template<typename T>
 T& do_throw(T){
