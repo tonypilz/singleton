@@ -1,6 +1,7 @@
 #include "InstanceTest.h"
 #include <src/globalInstances.h>
 #include <src/globalInstances.h>
+#include "operatorNew.h"
 
 using namespace global;
 
@@ -14,6 +15,7 @@ InstanceTest::InstanceTest(QObject *parent) : QObject(parent)
 
 void InstanceTest::aRegisteredInstanceIsAccessible()
 {
+    class A{};
     A a;
 
     detail::InstanceRegistration<A> registration;
@@ -24,6 +26,7 @@ void InstanceTest::aRegisteredInstanceIsAccessible()
 
 void InstanceTest::anUnregisteredInstanceIsNotAccessible()
 {
+    class A{};
     QVERIFY(instance<A>()==nullptr);
 }
 
@@ -38,13 +41,15 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
 
     detail::InstanceRegistration<A> registration(&b);
 
-    auto res = dynamic_cast<B*>(static_cast<A*>(instance<A>()));
+    auto res = static_cast<B*>(static_cast<A*>(instance<A>()));
 
     QCOMPARE(res->x,val);
 }
 
 void InstanceTest::gettingNullThrowsWithoutHandler()
 {
+    class A{};
+
     try{
         instance<A>();
     }
@@ -58,6 +63,8 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 
     onNullptrAccess() = [](){ throw UntypedTestHandler();};
 
+    class A{};
+
     try{
         instance<A>();
     }
@@ -69,6 +76,8 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 
 void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
 {
+    class A{};
+
     A a;
 
     class UntypedTestHandler : public std::exception {};
@@ -90,6 +99,8 @@ void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
 
 void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
 {
+    class A{};
+
     A a;
     detail::InstanceRegistration<A> registration(&a);
 
@@ -102,6 +113,8 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
 
 void InstanceTest::functionWillBeCalledDirectlyIfInstanceUndefined()
 {
+    class A{};
+
     A a;
 
     bool called = false;
@@ -113,6 +126,8 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceUndefined()
 
 void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
 {
+    class A{};
+
     A a;
 
     bool called = false;
@@ -128,6 +143,9 @@ void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
 
 void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
 {
+
+    class A{};
+
     A a;
 
     bool called = false;
@@ -144,6 +162,8 @@ void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
 
 void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
 {
+    class A{};
+
     A a;
 
     detail::InstanceRegistration<A> registration(&a);
@@ -161,6 +181,8 @@ void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
 
 void InstanceTest::functionWillBeCalledOnlyOnceIndirectly()
 {
+    class A{};
+
     A a;
 
     int callCount = 0;
@@ -178,6 +200,8 @@ void InstanceTest::functionWillBeCalledOnlyOnceIndirectly()
 
 void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
 {
+    class A{};
+
     A a;
 
     detail::InstanceRegistration<A> registration(&a);
@@ -196,6 +220,8 @@ void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
 
 void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
 {
+    class A{};
+
     A a;
 
     int funcCallCount = 0;
@@ -215,6 +241,8 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
 
 void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnInstanceChange()
 {
+    class A{};
+
     A a;
 
     int funcCallCount1 = 0;
@@ -258,6 +286,8 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnInstanceChange(
 
 void InstanceTest::recursiveQueuingWorks()
 {
+    class A{};
+
     A a;
 
     int funcCallCount1 = 0;
@@ -301,6 +331,8 @@ void InstanceTest::recursiveQueuingWorks()
 
 void InstanceTest::registerForDestructionWorks()
 {
+    class A{};
+
     A a;
 
     int funcCallCount = 0;
@@ -322,17 +354,12 @@ void InstanceTest::registerForDestructionWorks()
 
 void InstanceTest::instanceRefWorks()
 {
-
-
-
     struct A { int x; };
 
     using Map = std::map<std::string,A>;
     global::Instance<Map> a { Map{
             {"hans", A{1}},
             {"wurst",A{2}}}};
-
-
 
     {
         const auto val = global::instanceRef<Map>()["hans"].x;
@@ -348,6 +375,8 @@ void InstanceTest::instanceRefWorks()
 }
 void InstanceTest::instanceBeforeIsAvailableToDefferedOperations()
 {
+    class A{};
+
     A a,b;
 
     A* before = nullptr;
@@ -381,4 +410,51 @@ void InstanceTest::instanceBeforeIsAvailableToDefferedOperations()
     QCOMPARE(current,null);
 
 
+}
+
+void InstanceTest::operatorNewNotUsedOnFinishedFunctions()
+{
+    struct A{};
+
+    const int newCountBefore = newCallCount();
+
+    instance<A>().addDeferredOperationWithArgBefore([&](A const*,A const*){ return finished; });
+    instance<A>().addDeferredOperation([&](A const*){ return finished; });
+    instance<A>().ifUnavailable([&](){ });
+
+    QCOMPARE(newCountBefore,newCallCount());
+
+    instance<A>().addDeferredOperationWithArgBefore([&](A const*,A const*){ return pending; });
+    instance<A>().addDeferredOperation([&](A const*){ return pending; });
+    instance<A>().ifAvailable([&](A const&){ });
+
+    QVERIFY(newCallCount()>=(newCountBefore+3));
+}
+
+void InstanceTest::registeredInstanceAccessDoesNotInvokeOperatorNew()
+{
+    struct A{void foo(){}};
+    global::Instance<A> a;
+
+    const int newCountBefore = newCallCount();
+
+    instance<A>()->foo();
+
+    QCOMPARE(newCountBefore,newCallCount());
+
+}
+
+void InstanceTest::unregisteredInstanceAccessDoesNotInvokeOperatorNew()
+{
+    const int newCountBefore = newCallCount();
+
+    try{
+        struct A{void foo(){}};
+        instance<A>()->foo();
+    }
+    catch(...){
+
+    }
+
+    QCOMPARE(newCountBefore,newCallCount());
 }

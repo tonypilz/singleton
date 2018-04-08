@@ -17,36 +17,37 @@ class DeferredOperations {
 public:
 
     template<typename Op >
-    void addDeferredOperationWithArgBefore(Op func){
+    void addDeferredOperationWithArgBefore(Op func,TargetInstance* current){
+        if (func(current,current)==DeferredOperationState::finished) return;
         operations.emplace_back(func);
     }
 
     template<typename Op >
-    void addDeferredOperation(Op func){
+    void addDeferredOperation(Op func,TargetInstance* current){
         addDeferredOperationWithArgBefore(
                     [func](TargetInstance* /*before*/, TargetInstance* current) {
                         return func(current);
-        });
+        },current);
     }
 
     template<typename Func >
-    void ifAvailable(Func func){
+    void ifAvailable(Func func,TargetInstance* current){
         addDeferredOperation(
                     [func](TargetInstance* current) {
                         if (current==nullptr) return DeferredOperationState::pending;
                         func(*current);
                         return DeferredOperationState::finished;
-        });
+        },current);
     }
 
     template<typename Func >
-    void ifUnavailable(Func func){
+    void ifUnavailable(Func func,TargetInstance* current){
         addDeferredOperation(
                     [func](TargetInstance* current) {
                         if (current!=nullptr) return DeferredOperationState::pending;
                         func();
                         return DeferredOperationState::finished;
-        });
+        },current);
     }
 
 

@@ -37,9 +37,6 @@ private slots:
     void privateConstructorsCanBeUsedWithMacro();
 
 
-
-
-
 };
 
 #endif // REGISTRATIONTEST_H

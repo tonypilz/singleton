@@ -24,6 +24,8 @@ private slots:
 
     void instanceBeforeIsPassedCorrectly();
 
+    void operatorNewNotUsedOnFinishedFunctions();
+
 
 
 };

@@ -33,26 +33,22 @@ public:
 
     template<typename Op >
     void addDeferredOperationWithArgBefore(Op func){
-        deferredOperations.addDeferredOperationWithArgBefore(func);
-        deferredOperations.conditionsChanged(instancePtr,instancePtr);
+        deferredOperations.addDeferredOperationWithArgBefore(func,instancePtr);
     }
 
     template<typename DeferredOperation>
     void addDeferredOperation(DeferredOperation op){
-        deferredOperations.addDeferredOperation(op);
-        deferredOperations.conditionsChanged(instancePtr,instancePtr);
+        deferredOperations.addDeferredOperation(op,instancePtr);
     }
 
     template<typename Func >
     void ifAvailable(Func func){
-        deferredOperations.ifAvailable(func);
-        deferredOperations.conditionsChanged(instancePtr,instancePtr);
+        deferredOperations.ifAvailable(func,instancePtr);
     }
 
     template<typename Func >
     void ifUnavailable(Func func){
-        deferredOperations.ifUnavailable(func);
-        deferredOperations.conditionsChanged(instancePtr,instancePtr);
+        deferredOperations.ifUnavailable(func,instancePtr);
     }
 
     std::function<T*()> onNullPtrAccess;

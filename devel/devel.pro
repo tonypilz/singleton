@@ -4,6 +4,8 @@ CONFIG -= app_bundle
 QT += testlib
 
 QMAKE_CXXFLAGS += -Wpedantic
+QMAKE_CXXFLAGS += -fno-rtti
+#QMAKE_CXXFLAGS += -fno-exceptions
 
 include($$PWD/src/src.pri)
 include($$PWD/tests/tests.pri)

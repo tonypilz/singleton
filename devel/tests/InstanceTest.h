@@ -10,10 +10,6 @@ class InstanceTest : public QObject
 public:
     explicit InstanceTest(QObject *parent = 0);
 
-private:
-
-    class A{};
-
 signals:
 
 private slots:
@@ -50,6 +46,11 @@ private slots:
     void instanceRefWorks();
 
     void instanceBeforeIsAvailableToDefferedOperations();
+
+    void operatorNewNotUsedOnFinishedFunctions();
+
+    void registeredInstanceAccessDoesNotInvokeOperatorNew();
+    void unregisteredInstanceAccessDoesNotInvokeOperatorNew();
 
 };
 

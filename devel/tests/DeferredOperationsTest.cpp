@@ -1,6 +1,7 @@
 #include "DeferredOperationsTest.h"
 
 #include <src/globalInstances.h>
+#include "operatorNew.h"
 
 using global::detail::DeferredOperations;
 constexpr auto pending = global::DeferredOperationState::pending;
@@ -18,9 +19,8 @@ void DeferredOperationsTest::argumentIsPassedToEachElement()
     A a;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
-    op.addDeferredOperation([&](A const*e){ out1 = e; return finished; });
-    op.addDeferredOperation([&](A const*e){ out2 = e; return finished; });
-    op.conditionsChanged(nullptr,&a);
+    op.addDeferredOperation([&](A const*e){ out1 = e; return finished; },&a);
+    op.addDeferredOperation([&](A const*e){ out2 = e; return finished; },&a);
     QCOMPARE(out1,&a);
     QCOMPARE(out2,&a);
 }
@@ -33,9 +33,7 @@ void DeferredOperationsTest::falseConditionsAreRexecuted()
     A a;
     int count = 0;
 
-    op.addDeferredOperation([&](A const*){++count; return pending;});
-
-    op.conditionsChanged(nullptr,&a);
+    op.addDeferredOperation([&](A const*){++count; return pending;},&a);
     QCOMPARE(count,1);
 
     op.conditionsChanged(nullptr,&a);
@@ -50,9 +48,8 @@ void DeferredOperationsTest::trueConditionsAreExecutedOnce()
     A a;
     int count = 0;
 
-    op.addDeferredOperation([&](A const*){++count; return finished;});
+    op.addDeferredOperation([&](A const*){++count; return finished;},&a);
 
-    op.conditionsChanged(nullptr,&a);
     QCOMPARE(count,1);
 
     op.conditionsChanged(nullptr,&a);
@@ -66,25 +63,33 @@ void DeferredOperationsTest::recursiveExecutionWorks()
     A a1, a2;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
+    const A* null = nullptr;
 
-    op.addDeferredOperation([&](A const*e1){
+    op.addDeferredOperation([&](A *e1){
+
+        if (e1==nullptr) return pending;
+
         out1 = e1;
         op.addDeferredOperation([&](A const*e2) {
+
+            if (e2==nullptr) return pending;
+
             out2 = e2;
             return finished;
-        });
+        },nullptr);
         return finished;
-    });
+    },nullptr);
 
     op.conditionsChanged(nullptr,&a1);
+
     QCOMPARE(out1,&a1);
-    QCOMPARE(out2,static_cast<A*>(nullptr));
+    QCOMPARE(out2,null);
 
     out1 = nullptr;
     out2 = nullptr;
 
     op.conditionsChanged(nullptr,&a2);
-    QCOMPARE(out1,static_cast<A*>(nullptr));
+    QCOMPARE(out1,null);
     QCOMPARE(out2,&a2);
 
 
@@ -97,26 +102,26 @@ void DeferredOperationsTest::recursiveExecutionWorks1()
     A a1, a2;
     const A* out1 = nullptr;
     const A* out2 = nullptr;
+    const A* null = nullptr;
 
-    op.addDeferredOperation([&](A const*e1){
+    op.addDeferredOperation([&](A*e1){
         out1 = e1;
         op.addDeferredOperation([&](A const*e2) {
             out2 = e2;
             return finished;
-        });
+        },e1);
         return finished;
-    });
+    },&a1);
 
-    op.conditionsChanged(nullptr,&a1);
     QCOMPARE(out1,&a1);
-    QCOMPARE(out2,static_cast<A*>(nullptr));
+    QCOMPARE(out2,&a1);
 
     out1 = nullptr;
     out2 = nullptr;
 
-    op.conditionsChanged(nullptr,&a2);
-    QCOMPARE(out1,static_cast<A*>(nullptr));
-    QCOMPARE(out2,&a2);
+    op.conditionsChanged(&a1,&a2);
+    QCOMPARE(out1,null);
+    QCOMPARE(out2,null);
 }
 
 void DeferredOperationsTest::instanceBeforeIsPassedCorrectly()
@@ -128,12 +133,36 @@ void DeferredOperationsTest::instanceBeforeIsPassedCorrectly()
     const A* out1 = nullptr;
     const A* out2 = nullptr;
 
-    op.addDeferredOperationWithArgBefore([&](A const*before,A const*current){ out1 = before; out2 = current; return pending; });
+    op.addDeferredOperationWithArgBefore([&](A const*before,A const*current){ out1 = before; out2 = current; return pending; },nullptr);
 
     op.conditionsChanged(&a,&b);
 
     QCOMPARE(out1,&a);
     QCOMPARE(out2,&b);
+}
+
+void DeferredOperationsTest::operatorNewNotUsedOnFinishedFunctions()
+{
+    const int newCountBefore = newCallCount();
+
+    DeferredOperations<A> op;
+
+    A a;
+
+    op.addDeferredOperationWithArgBefore([&](A const*,A const*){ return finished; },nullptr);
+    op.addDeferredOperation([&](A const*){ return finished; },nullptr);
+    op.ifAvailable([&](A const&){ },&a);
+    op.ifUnavailable([&](){ },nullptr);
+
+    QCOMPARE(newCountBefore,newCallCount());
+
+    op.addDeferredOperationWithArgBefore([&](A const*,A const*){ return pending; },nullptr);
+    op.addDeferredOperation([&](A const*){ return pending; },nullptr);
+    op.ifAvailable([&](A const&){ },nullptr);
+    op.ifUnavailable([&](){ },&a);
+
+    QVERIFY(newCallCount()>=(newCountBefore+4));
+
 }
 
 
