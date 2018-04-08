@@ -46,7 +46,7 @@ The remainder of the document discusses the library in more detail.
     - [How to Handle Invalid Access](#how-to-handle-invalid-access)
     - [Various Aspects](#various-aspects)
         - [Thread Savety](#thread-savety)
-        - [How to Stop the Compiler from Warning about Unused Variables](#how-to-stop-the-compiler-from-warning-about-unused-variables)
+        - [How to Remove the Compiler Warnings About Unused Variables](#how-to-remove-the-compiler-warnings-about-unused-variables)
         - [Behaviour on Exceptions](#behaviour-on-exceptions)
         - [Static Destruction](#static-destruction)
         - [Use on Embedded Devices](#use-on-embedded-devices)
@@ -380,7 +380,7 @@ void main(){
  t2.join();
 }
 ```
-### How to Stop the Compiler from Warning about Unused Variables
+### How to Remove the Compiler Warnings About Unused Variables
 The compiler can be silenced by using the unused variable:
 
 ```cpp
@@ -416,7 +416,7 @@ If exceptions are disabled all errors will be handled by invoking `exit()` inste
 
 
 ### How to use Multiple Instances of the Same Type
-In order to have multiple instances of the same type globally accessible one needs simply to add a template parameter to the type:
+In order to globally access multiple instances of the same type one simply needs to add a template parameter to the type which is to be accessed:
 
 ```cpp
 template<typename Instance = void>
@@ -443,12 +443,12 @@ void main(){
 }                                        
 
 void bar() {
-    global::instance<A<Blue>>()->foo();   // accessing the third instance of type A
+    global::instance<A<Blue>>()->foo(); // accessing the third instance of type A
 }
 
 ```
 
-Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow accessing the instances via `global::instance<A<Index<4,6>>>()`.
+Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using an integral type `template<int x, int y> struct A{...};`, which would allow accessing the instances via `global::instance<A<4,6>>()`.
 
 ### Private Constructors
 In order to be able to declare constructors private, one has to declare friendship as shown in the example below:
@@ -476,8 +476,7 @@ struct A{
 private:
     A(){}
 
-    template< template<typename,typename>class,
-              typename ,
+    template< template<typename>class,
               typename ,
               typename >
     friend class global::detail::RegisterdInstanceT;
@@ -584,11 +583,11 @@ T& instance() {
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
 
-| Feature  | supports instance replace-ment for testing  | 2-phase init-tialization avoidable | control over cons-truction seqence  | control over des-truction seqence  | control over des-truction point in time  | auto-matic des-truc-tion  | cons-tructor argu-ments  | thread-save cons-truc-tion  | imple-men-tation pattern  | forces virtual des-tructor  | thread local ins-tances  |
+| Feature  | supports instance replace-ment for testing  | 2-phase init-tialization avoidable | control over cons-truction seqence  | control over des-truction seqence  | control over des-truction point in time  | auto-matic des-truc-tion  | cons-tructor argu-ments  | thread-save cons-truc-tion  | imple-men-tation pattern | forces virtual des-tructor  | thread local ins-tances  |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
- |  This Lib  |  X  |  X  |  full  |  full  |   full  |  X  |  X  |  -  |  indep. class  |  -  |  -  |
+ |  This Lib  |  X  |  X  |  full  |  full  |   full  |  X  |  X  |  -  |  indep. class<sup>6</sup> |  -  |  -  |
  |  [Classical Singleton](#comparision-with-the-classical-singleton)  |  -  |  -  |  limited  |  none  |  none  |  X  |  -  |  X  |  function  |  -  |  -  |
- |  [herpe]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  X<sup>1</sup>  |  X  |  CRTP  |  X  |  -  |
+ |  [herpe]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  X<sup>1</sup>  |  X  |  CRTP<sup>7</sup> |  X  |  -  |
  |  [ugrif]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -  |  -  |  -  |  macro  |  -  |  -  |
  |  [xytis]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -<sup>3</sup>  |  -  |  -  |   indep. class   |  -  |  -  |
  |  [aworx]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -  |  -  |  X<sup>5</sup>  |  CRTP  |  X  |  -  |
@@ -607,9 +606,11 @@ Most of the singleton libraries found on github in April 2018 were demos/example
 
  <sup>5</sup> Implementation of manual locking/unlocking incorrect
 
-CRTP = curiously recurring template pattern
+ <sup>6</sup> indep. class = independed free standing class(es) which do not require inheritance
+ 
+ <sup>7</sup> CRTP = curiously recurring template pattern
 
-indep. class = independed free standing class(es) which do not require inheritance
+
 
 [herpe]: https://github.com/herpec-j/Singleton
 [ugrif]: https://github.com/ugriffin/VSSynthesiseSingleton
