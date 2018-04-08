@@ -1,6 +1,7 @@
 #pragma once
 
 #include <exception>
+#include "throwImpl.h"
 
 
 namespace global {
@@ -24,7 +25,7 @@ public:
     }
 
     explicit operator T() const{
-        if (!m_hasValue)  throw bad_optional_access();
+        if (!m_hasValue)  do_throw(bad_optional_access{});
         return val;
     }
 

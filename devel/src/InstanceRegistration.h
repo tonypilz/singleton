@@ -2,6 +2,7 @@
 
 #include "OptionalValue.h"
 #include "instance.h"
+#include "throwImpl.h"
 #include <utility>
 
 namespace global {
@@ -66,8 +67,8 @@ public:
 
     void registerInstance(T* t) override{
 
-        if (instance<T>()!=nullptr) throw InstanceReplacementNotAllowed();
-        if (t==nullptr) throw RegisteringNullNotAllowed();
+        if (instance<T>()!=nullptr) do_throw(InstanceReplacementNotAllowed{});
+        if (t==nullptr) do_throw(RegisteringNullNotAllowed{});
 
         Superclass::registerInstance(t);
     }

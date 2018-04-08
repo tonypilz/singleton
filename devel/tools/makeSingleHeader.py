@@ -3,6 +3,7 @@ import subprocess
 
 headerDir = '../src'
 headerFiles = [
+   'throwImpl.h',
    'DeferredOperations.h',
    'NullptrAccessHandler.h',
    'staticValue.h',
