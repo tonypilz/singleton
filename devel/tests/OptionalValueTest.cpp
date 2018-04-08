@@ -19,21 +19,23 @@ void OptionalValueTest::defaultConstructedValueNotSet()
 
 void OptionalValueTest::accessingInvalidValueThrows()
 {
+    #ifdef __cpp_exceptions
 
      try{
         optional<A> a;
         static_cast<A>(a);
      }
-    catch(bad_optional_access
- const&){
+    catch(bad_optional_access const&){
         return;
-
     }
     catch(...){
 
     }
 
     QFAIL("");
+
+#endif
+
 }
 
 void OptionalValueTest::assignedValueIsValid()

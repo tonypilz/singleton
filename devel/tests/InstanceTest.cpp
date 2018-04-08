@@ -46,8 +46,10 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
     QCOMPARE(res->x,val);
 }
 
+
 void InstanceTest::gettingNullThrowsWithoutHandler()
 {
+    #ifdef __cpp_exceptions
     class A{};
 
     try{
@@ -55,13 +57,17 @@ void InstanceTest::gettingNullThrowsWithoutHandler()
     }
     catch(NullptrAccess const&){}
     catch(...){ QFAIL("");}
+    #endif
 }
 
 void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 {
+#ifdef __cpp_exceptions
+
     class UntypedTestHandler : public std::exception {};
 
-    onNullptrAccess() = [](){ throw UntypedTestHandler();};
+    onNullptrAccess() = [](){ detail::do_throw(UntypedTestHandler{});};
+
 
     class A{};
 
@@ -72,10 +78,15 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
     catch(...){ QFAIL("");}
 
     onNullptrAccess() = std::function<void()>{}; //cleanup installed handler
+
+
+#endif
+
 }
 
 void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
 {
+
     class A{};
 
     A a;
@@ -87,7 +98,7 @@ void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
     auto& ht = instance<A>().onNullPtrAccess;
 
 
-    hu = [](){ throw UntypedTestHandler();};
+    hu = [](){ detail::do_throw(UntypedTestHandler());};
     ht = [&a](){ return &a;};
 
     QCOMPARE(static_cast<A*>(instance<A>()),&a);
@@ -446,6 +457,7 @@ void InstanceTest::registeredInstanceAccessDoesNotInvokeOperatorNew()
 
 void InstanceTest::unregisteredInstanceAccessDoesNotInvokeOperatorNew()
 {
+#ifdef __cpp_exceptions
     const int newCountBefore = newCallCount();
 
     try{
@@ -457,4 +469,7 @@ void InstanceTest::unregisteredInstanceAccessDoesNotInvokeOperatorNew()
     }
 
     QCOMPARE(newCountBefore,newCallCount());
+
+#endif
+
 }

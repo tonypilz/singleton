@@ -1,4 +1,5 @@
 #include "operatorNew.h"
+#include <src/throwImpl.h>
 #include <memory>
 
 
@@ -15,14 +16,14 @@ void *operator new[](std::size_t count)
     return malloc(count);
 }
 
-void *operator new(std::size_t count, const std::nothrow_t &tag)
+void *operator new(std::size_t, const std::nothrow_t &)
 {
-  throw "xxx";
+    global::detail::do_throw(std::exception{});
 }
 
-void *operator new[](std::size_t count, const std::nothrow_t &tag)
+void *operator new[](std::size_t, const std::nothrow_t &)
 {
-  throw "xxx";
+  global::detail::do_throw(std::exception{});
 }
 
 int &newCallCount()

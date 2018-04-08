@@ -10,6 +10,7 @@
 #include <src/globalInstances.h>
 #include "InstanceTest.h"
 #include "RegistrationTest.h"
+#include <src/throwImpl.h>
 
 
 namespace global {
@@ -17,7 +18,7 @@ namespace tests {
 
 
 void testFailed(){
-    throw 12345;
+    detail::do_throw(std::exception{});
 }
 
 TestMain::TestMain(int argc, char* argv[])

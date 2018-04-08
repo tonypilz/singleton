@@ -24,6 +24,7 @@ void RegistrationTest::leavingTheScopeOfASingleInstanceRegistrationDeregistersIn
 
 void RegistrationTest::SingleInstanceRegistrationAllowsOnlySingleRegistration()
 {
+#ifdef __cpp_exceptions
     class A{};
     A a;
 
@@ -33,6 +34,9 @@ void RegistrationTest::SingleInstanceRegistrationAllowsOnlySingleRegistration()
     }
     catch(global::InstanceReplacementNotAllowed const&){}
     catch(...){ QFAIL("");}
+
+
+#endif
 
 }
 
@@ -72,6 +76,7 @@ void RegistrationTest::registrationsCanBeChanged()
 void RegistrationTest::InstanceBasicallyWorks()
 {
 
+#ifdef __cpp_exceptions
     class A{ };
     global::Instance<A> a;
     QVERIFY(global::instance<A>()!=nullptr);
@@ -85,6 +90,9 @@ void RegistrationTest::InstanceBasicallyWorks()
     catch(...){
         QFAIL("");
     }
+
+#endif
+
 }
 
 
