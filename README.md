@@ -584,10 +584,8 @@ T& instance() {
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
 
-
-
 | Feature  | supports instance replace-ment for testing  | 2-phase init-tialization avoidable | control over cons-truction seqence  | control over des-truction seqence  | control over des-truction point in time  | auto-matic des-truc-tion  | cons-tructor argu-ments  | thread-save cons-truc-tion  | imple-men-tation pattern  | forces virtual des-tructor  | thread local ins-tances  |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- 
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
  |  This Lib  |  X  |  X  |  full  |  full  |   full  |  X  |  X  |  -  |  indep. class  |  -  |  -  |
  |  [Classical Singleton](#comparision-with-the-classical-singleton)  |  -  |  -  |  limited  |  none  |  none  |  X  |  -  |  X  |  function  |  -  |  -  |
  |  [herpe]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  X<sup>1</sup>  |  X  |  CRTP  |  X  |  -  |
