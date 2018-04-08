@@ -49,6 +49,7 @@ The remainder of the document discusses the library in more detail.
         - [How to Stop the Compiler from Warning about Unused Variables](#how-to-stop-the-compiler-from-warning-about-unused-variables)
         - [Behaviour on Exceptions](#behaviour-on-exceptions)
         - [Static Destruction](#static-destruction)
+        - [Use on Embedded Devices](#use-on-embedded-devices)
         - [How to use Multiple Instances of the Same Type](#how-to-use-multiple-instances-of-the-same-type)
         - [Private Constructors](#private-constructors)
         - [Program Startup/Shutdown Status](#program-startupshutdown-status)
@@ -332,7 +333,7 @@ The first two handlers are effective only for `global::instance<A>()`. The diffe
 In this paragraph some minor aspects to using this library will be discussed.
 
 ### Thread Savety
-This library does not employ synchnization primitives like mutexes. Therefore it is generally not thread-save. However, since the library provides full control over timepoint of construction / destruction it should almost never be necessary to synchronize global instance construction or destruction since program startup and shutdown happen in almost all casses single threaded. And after construction of all global instances is complete all calls to `global::instance<T>()` are thread-save since no data is beeing changed:
+This library does not employ synchnization primitives like mutexes. Therefore it is generally not thread-save. However, since the library provides full control over timepoint of construction / destruction it should almost never be necessary to synchronize global instance construction or destruction since program startup and shutdown happen in almost all cases single threaded. And after construction of all global instances is complete all calls to `global::instance<T>()` are thread-save since no data is beeing changed:
 
 ```cpp
 struct A{ void foo(); };
@@ -394,12 +395,25 @@ void main(){
 
 ### Behaviour on Exceptions
 
-If `A` throws an exceptions during construction of `global::Instance<A> a;`, it will not be made globally available and therefore no deferred calls will be triggered.
+If `A` throws an exceptions during its construction within `global::Instance<A> a;`, it will not be made globally accessible and therefore no deferred calls will be triggered.
 
 If a deferred call throws, some of the unexecuted deferred calls will be discarded and therefore never be executed. 
 
 ### Static Destruction
 Since static variables are used to provide global instance access one should keep in mind that they will be destroyed during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
+
+### Use on Embedded Devices
+The library can be used in an embedded environment since it 
+ - does not require runtime type information, 
+ - calls operator `new`/`delete` only during startup and shutdown and 
+ - can be used with exceptions disabled.
+
+Notes:
+
+After all instances have been created, calls to instances eg `global::instance<T>()->foo()` do not invoke `new` new or `delete`. The same applies to all deferred calls eg `global::instance<T>().ifAvailable()` unless they cannot be executed directly.
+
+If exceptions are disabled all errors will be handled by invoking `exit()` instead of throwing an exception.
+
 
 ### How to use Multiple Instances of the Same Type
 In order to have multiple instances of the same type globally accessible one needs simply to add a template parameter to the type:
