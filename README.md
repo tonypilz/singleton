@@ -551,19 +551,19 @@ T& instance() {
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
 
-| Feature | This Lib | Classical Singleton | [herpe] | [ugrif] | [xytis] | [aworx] | [fwolt] | [zyf38] | [cheno] |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | 
-supports instance replacement for testing | X | - | - | - | - | - | - | - | X
-automatic 2-phase initialization | X | - | - | - | - | - | - | - | -
-control over construction seqence | full | limited | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited | limited<sup>2</sup> | limited<sup>2</sup>
-control over destruction seqence | full | none | none | full | full | full | none | none | full
-control over destruction point in time |  full | none | none | full | full | full | none | none | full
-automatic destruction | X | X | X | - | -<sup>3</sup> | - | X | X | -<sup>4</sup>
-constructor arguments | X | - | X<sup>1</sup> | - | - | - | X | - | -
-threadsave construction | - | X | X | - | - | X<sup>5</sup> | X | X | X
-implementation pattern | indep. class | function | CRTP | macro |  indep. class  | CRTP | CRTP | indep. class | indep. class 
-forces virtual destructor | - | - | X | - | - | X | - | - | -
-thread local instances | - | - | - | - | - | - | - | - | X
+| Feature | This Lib | Classical Singleton | [herpe] | [ugrif] | [xytis] | [aworx] | [fwolt] | [zyf38] | [cheno] | [cppma]
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+supports instance replacement for testing | X | - | - | - | - | - | - | - | X | X
+2-phase initialization avoidable| X | - | - | - | - | - | - | - | - | -
+control over construction seqence | full | limited | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited | limited<sup>2</sup> | limited<sup>2</sup> | full<sup>2</sup>
+control over destruction seqence | full | none | none | full | full | full | none | none | full | full
+control over destruction point in time |  full | none | none | full | full | full | none | none | full | full
+automatic destruction | X | X | X | - | -<sup>3</sup> | - | X | X | -<sup>4</sup> | X
+constructor arguments | X | - | X<sup>1</sup> | - | - | - | X | - | - | up to 4
+threadsave construction | - | X | X | - | - | X<sup>5</sup> | X | X | X | optional
+implementation pattern | indep. class | function | CRTP | macro |  indep. class  | CRTP | CRTP | indep. class | indep. class | indep. class
+forces virtual destructor | - | - | X | - | - | X | - | - | - | -
+thread local instances | - | - | - | - | - | - | - | - | X | -
 
  <sup>1</sup> Implementation of constructor arguments incorrect
 
@@ -586,7 +586,7 @@ indep. class = independed free standing class(es) which do not require inheritan
 [fwolt]: https://github.com/FlorianWolters/cpp-component-util-singleton
 [zyf38]: https://github.com/zyf3883310/C-11-Thread-Safe-Singleton
 [cheno]: https://github.com/chenokay/selib
-
+[cppma]: https://github.com/cppmaven/Singularity
 # Under the Hood
  
  In oder to get an idea how the library is implemented it is sufficient to take a closer look at the two main expressions:
