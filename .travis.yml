@@ -19,4 +19,4 @@ before_script:
   - /usr/lib/x86_64-linux-gnu/qt4/bin/qmake ../devel/devel.pro -r -spec linux-g++-64 CONFIG+=debug
 script:
   - make
-- ./devel
+  - ./devel
