@@ -22,7 +22,7 @@ void testFailed(){
 TestMain::TestMain(int argc, char* argv[])
 {
 
-    QApplication app(argc, argv);
+    QCoreApplication app(argc, argv);
 
 
 
