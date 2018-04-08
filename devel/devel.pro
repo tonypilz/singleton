@@ -3,6 +3,7 @@ CONFIG += c++11
 CONFIG -= app_bundle
 QT += testlib
 
+QMAKE_CXXFLAGS += -std=c++11
 QMAKE_CXXFLAGS += -Wpedantic
 QMAKE_CXXFLAGS += -fno-rtti
 #QMAKE_CXXFLAGS += -fno-exceptions
