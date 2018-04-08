@@ -48,6 +48,7 @@ The remainder of the document discusses the library in more detail.
     - [How to Handle Invalid Access](#how-to-handle-invalid-access)
     - [Various Aspects](#various-aspects)
         - [Thread Savety](#thread-savety)
+        - [Compiler Warning Unused Variable](#compiler-warning-unused-variable)
         - [Behaviour on Exceptions](#behaviour-on-exceptions)
         - [Static Destruction](#static-destruction)
         - [Private Constructors](#private-constructors)
@@ -409,6 +410,7 @@ void main(){
  t2.join();
 }
 ```
+### Compiler Warning Unused Variable
 
 ### Behaviour on Exceptions
 
