@@ -1,6 +1,5 @@
 #pragma once
 
-#define USE_SINGLE_HEADER
 
 
 #ifdef USE_SINGLE_HEADER
@@ -17,10 +16,4 @@
 #include "instance.h"
 #include "InstanceRegistration.h"
 
-
-#endif // GLOBALINSTANCES_H
-
-
-
-
-
+#endif // USE_SINGLE_HEADER
