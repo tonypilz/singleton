@@ -61,6 +61,9 @@ The remainder of the document discusses the library in more detail.
 <!-- /TOC -->
 
 # Status
+
+[![Build Status](https://travis-ci.org/tonypilz/global-instances-access.svg?branch=master)](https://travis-ci.org/tonypilz/global-instances-access)
+
 ## Testing
 
 All tests pass under gcc-7.2.0.
@@ -72,6 +75,8 @@ The library compiles under
  - icc-18
 
 The compiler flag `-std=c++11` is used
+
+
  
 ## Installation
 
