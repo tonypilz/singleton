@@ -1,11 +1,15 @@
+addons:
+  apt:
+    packages:
+    - qt4-default 
+    - gcc-4.8
+    - g++-4.8
 language:
   - cpp
 compiler:
   - gcc
 before_install:
 install:
-  - sudo apt-get install qt4-default 
-  - sudo apt-get install gdb 
 before_script:
   - mkdir Build
   - cd Build
