@@ -578,23 +578,26 @@ T& instance() {
 }
 ```
 
+
+
 ### Comparision to Other Libraries
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
 
-| Feature | This Lib | Classical Singleton | [herpe] | [ugrif] | [xytis] | [aworx] | [fwolt] | [zyf38] | [cheno] | [cppma]
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-supports instance replacement for testing | X | - | - | - | - | - | - | - | X | X
-2-phase initialization avoidable| X | - | - | - | - | - | - | - | - | -
-control over construction seqence | full | limited | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited<sup>2</sup> | limited | limited<sup>2</sup> | limited<sup>2</sup> | full<sup>2</sup>
-control over destruction seqence | full | none | none | full | full | full | none | none | full | full
-control over destruction point in time |  full | none | none | full | full | full | none | none | full | full
-automatic destruction | X | X | X | - | -<sup>3</sup> | - | X | X | -<sup>4</sup> | X
-constructor arguments | X | - | X<sup>1</sup> | - | - | - | X | - | - | up to 4
-threadsave construction | - | X | X | - | - | X<sup>5</sup> | X | X | X | optional
-implementation pattern | indep. class | function | CRTP | macro |  indep. class  | CRTP | CRTP | indep. class | indep. class | indep. class
-forces virtual destructor | - | - | X | - | - | X | - | - | - | -
-thread local instances | - | - | - | - | - | - | - | - | X | -
+
+
+| Feature  | supports instance replace-ment for testing  | 2-phase init-tialization avoidable | control over cons-truction seqence  | control over des-truction seqence  | control over des-truction point in time  | auto-matic des-truc-tion  | cons-tructor argu-ments  | thread-save cons-truc-tion  | imple-men-tation pattern  | forces virtual des-tructor  | thread local ins-tances  |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- 
+ |  This Lib  |  X  |  X  |  full  |  full  |   full  |  X  |  X  |  -  |  indep. class  |  -  |  -  |
+ |  [Classical Singleton](#comparision-with-the-classical-singleton)  |  -  |  -  |  limited  |  none  |  none  |  X  |  -  |  X  |  function  |  -  |  -  |
+ |  [herpe]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  X<sup>1</sup>  |  X  |  CRTP  |  X  |  -  |
+ |  [ugrif]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -  |  -  |  -  |  macro  |  -  |  -  |
+ |  [xytis]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -<sup>3</sup>  |  -  |  -  |   indep. class   |  -  |  -  |
+ |  [aworx]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -  |  -  |  X<sup>5</sup>  |  CRTP  |  X  |  -  |
+ |  [fwolt]  |  -  |  -  |  limited  |  none  |  none  |  X  |  X  |  X  |  CRTP  |  -  |  -  |
+ |  [zyf38]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  -  |  X  |  indep. class  |  -  |  -  |
+ |  [cheno]  |  X  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -<sup>4</sup>  |  -  |  X  |  indep. class  |  -  |  X  |
+ |  [cppma] |  X |  - |  full<sup>2</sup> |  full |  full |  X |  up to 4 |  optional |  indep. class |  - |  - |
 
  <sup>1</sup> Implementation of constructor arguments incorrect
 
