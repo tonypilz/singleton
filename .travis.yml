@@ -6,6 +6,7 @@ compiler:
 before_install:
 install:
   - sudo apt-get install qt4-default 
+  - sudo apt-get install gdb 
 before_script:
   - mkdir Build
   - cd Build
