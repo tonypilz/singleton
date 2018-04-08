@@ -75,7 +75,7 @@ private:
         return *this;
     }
 
-    template<typename, typename>
+    template<typename>
     friend class ReplacingInstanceRegistration;
 
     using ClassType = InstancePointer<T>;

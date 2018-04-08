@@ -25,7 +25,6 @@ void main(){
 Besides the main usage above, the following aspects are also covered by this library: 
  - [testing](#how-to-do-testing) 
  - [avoid two-phase initialization](#how-to-avoid-two-phase-initialization) 
- - [use multiple instances of the same type](#how-to-use-multiple-instances-of-the-same-type)
  - [handle invalid access](#how-to-handle-invalid-access)
  - [pass arguments to the constructor](#how-to-pass-arguments-to-the-constructor)
 
@@ -44,13 +43,13 @@ The remainder of the document discusses the library in more detail.
     - [How to do Testing](#how-to-do-testing)
     - [How to Avoid Two-Phase Initialization](#how-to-avoid-two-phase-initialization)
     - [How to Pass Arguments to the Constructor](#how-to-pass-arguments-to-the-constructor)
-    - [How to use Multiple Instances of the Same Type](#how-to-use-multiple-instances-of-the-same-type)
     - [How to Handle Invalid Access](#how-to-handle-invalid-access)
     - [Various Aspects](#various-aspects)
         - [Thread Savety](#thread-savety)
-        - [Compiler Warning Unused Variable](#compiler-warning-unused-variable)
+        - [How to Stop the Compiler from Warning about Unused Variables](#how-to-stop-the-compiler-from-warning-about-unused-variables)
         - [Behaviour on Exceptions](#behaviour-on-exceptions)
         - [Static Destruction](#static-destruction)
+        - [How to use Multiple Instances of the Same Type](#how-to-use-multiple-instances-of-the-same-type)
         - [Private Constructors](#private-constructors)
         - [Program Startup/Shutdown Status](#program-startupshutdown-status)
         - [Customizing the Library](#customizing-the-library)
@@ -283,37 +282,7 @@ void main(){
     global::Instance<A> a(2,"hello");  
 }
 ```
-## How to use Multiple Instances of the Same Type
-The library supports providing access to multiple instances of the same type as shown below:
 
-```cpp
-struct A
-{
-    void foo(){std::cout<<"foo\n";}
-};
-
-struct Red{};
-struct Green{};
-struct Blue{};
-
-void bar();
-
-void main(){
-
-    global::SubInstance<A,Red>   ar;     // creates first instance of type A
-    global::SubInstance<A,Green> ag;     // creates second instance of type A
-    global::SubInstance<A,Blue>  ab;     // creates third instance of type A
- 
-    bar();
-}                                        
-
-void bar() {
-    global::instance<A,Blue>()->foo();   // accessing the third instance of type A
-}
-
-```
-
-Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow accessing the instances via `global::instance<A,Index<4,6>>()`.
 
 ## How to Handle Invalid Access
 The attempt to access a global instance without a prior registration will by default cause an exception to be thrown. This default behaviour can be changed as follows:
@@ -410,7 +379,18 @@ void main(){
  t2.join();
 }
 ```
-### Compiler Warning Unused Variable
+### How to Stop the Compiler from Warning about Unused Variables
+The compiler can be silenced by using the unused variable:
+
+```cpp
+struct A{ void foo(); };
+
+void main(){
+
+ global::Instance<A> a; (void)a;   //no warning
+
+}
+```
 
 ### Behaviour on Exceptions
 
@@ -420,6 +400,41 @@ If a deferred call throws, some of the unexecuted deferred calls will be discard
 
 ### Static Destruction
 Since static variables are used to provide global instance access one should keep in mind that they will be destroyed during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
+
+### How to use Multiple Instances of the Same Type
+In order to have multiple instances of the same type globally accessible one needs simply to add a template parameter to the type:
+
+```cpp
+template<typename Instance = void>
+struct A
+{
+    void foo(){std::cout<<"foo\n";}
+};
+
+struct Red{};
+struct Green{};
+struct Blue{};
+
+void bar();
+
+void main(){
+
+    global::Instance<A<Red>>   ar;     // creates first instance of type A
+    global::Instance<A<Green>> ag;     // creates second instance of type A
+    global::Instance<A<Blue>>  ab;     // creates third instance of type A
+ 
+    global::Instance<A>   a;           // creates default instance of type A
+  
+    bar();
+}                                        
+
+void bar() {
+    global::instance<A<Blue>>()->foo();   // accessing the third instance of type A
+}
+
+```
+
+Note: The access to instances of the same type can be extended to e.g. multidimensional array access by using as index-type a form of `template<int x, int y> struct Index{}`, which would allow accessing the instances via `global::instance<A<Index<4,6>>>()`.
 
 ### Private Constructors
 In order to be able to declare constructors private, one has to declare friendship as shown in the example below:

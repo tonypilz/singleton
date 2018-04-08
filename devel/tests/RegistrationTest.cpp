@@ -20,20 +20,7 @@ void RegistrationTest::leavingTheScopeOfASingleInstanceRegistrationDeregistersIn
     QVERIFY(global::instance<A>()==nullptr);
 }
 
-void RegistrationTest::leavingTheScopeOfASubSingleInstanceRegistrationDeregistersInstance()
-{
-    class A{};
-    A a;
 
-    class MySub{};
-
-    {const bool def = global::instance<A,MySub>(); QCOMPARE(def,false);}
-    {
-        global::detail::InstanceRegistration<A,MySub> registration(&a);
-        {const bool def = global::instance<A,MySub>(); QCOMPARE(def,true);}
-    }
-    {const bool def = global::instance<A,MySub>(); QCOMPARE(def,false);}
-}
 
 void RegistrationTest::SingleInstanceRegistrationAllowsOnlySingleRegistration()
 {
@@ -49,21 +36,6 @@ void RegistrationTest::SingleInstanceRegistrationAllowsOnlySingleRegistration()
 
 }
 
-void RegistrationTest::singleInstanceSubRegistrationAllowsOnlySingleRegistration()
-{
-    class A{};
-    A a;
-
-    class MySub{};
-
-    global::detail::InstanceRegistration<A,MySub> registration(&a);
-    try {
-        global::detail::InstanceRegistration<A,MySub> registration(&a);
-    }
-    catch(global::InstanceReplacementNotAllowed const&){}
-    catch(...){ QFAIL("");}
-
-}
 
 void RegistrationTest::ReplacingInstanceRegistrationReplacesInstanceTemporarily()
 {
@@ -81,24 +53,7 @@ void RegistrationTest::ReplacingInstanceRegistrationReplacesInstanceTemporarily(
 
 }
 
-void RegistrationTest::replacingInstanceSubRegistrationReplacesInstanceTemporarily()
-{
-    class A{};
-    A a1,a2;
 
-    class MySub{};
-
-    global::detail::InstanceRegistration<A,MySub> registration(&a1);
-
-    {auto same = static_cast<A*>(global::instance<A,MySub>())==&a1; QVERIFY(same );}
-    {
-        global::detail::ReplacingInstanceRegistration<A,MySub> registration(&a2);
-        {auto same = static_cast<A*>(global::instance<A,MySub>())==&a2; QVERIFY(same );}
-    }
-    {auto same = static_cast<A*>(global::instance<A,MySub>())==&a1; QVERIFY(same );}
-
-
-}
 
 void RegistrationTest::registrationsCanBeChanged()
 {
@@ -113,19 +68,6 @@ void RegistrationTest::registrationsCanBeChanged()
 
 }
 
-void RegistrationTest::registrationsSubCanBeChanged()
-{
-    class A{};
-    A a1,a2;
-
-    class MySub{};
-
-    global::detail::ReplacingInstanceRegistration<A,MySub> registration(&a1);
-    registration.registerInstance(&a2);
-
-    {auto same = global::instance<A,MySub>()==&a2; QVERIFY(same);}
-
-}
 
 void RegistrationTest::InstanceBasicallyWorks()
 {
@@ -145,15 +87,7 @@ void RegistrationTest::InstanceBasicallyWorks()
     }
 }
 
-void RegistrationTest::InstanceBasicallyWorksSub()
-{
-    class A{ };
-    class Sub {};
-    global::SubInstance<A,Sub> a;
 
-    const auto def = global::instance<A,Sub>()!=nullptr;
-    QVERIFY(def);
-}
 
 void RegistrationTest::InstanceBasicallyWorksWithBaseclass()
 {
@@ -163,19 +97,19 @@ void RegistrationTest::InstanceBasicallyWorksWithBaseclass()
     QCOMPARE(global::instance<Base>()->foo(),4);
 }
 
-void RegistrationTest::InstanceBasicallyWorksWithArgsSub()
+void RegistrationTest::InstanceBasicallyWorksWithArgs()
 {
     struct A{ double x; std::string y; A(const double x_, const std::string& y_):x(x_),y(y_){} };
-    class Sub {};
-    global::SubInstance<A,Sub> a(3,"bla");
+
+    global::Instance<A> a(3,"bla");
 
     {
-        auto eq = global::instance<A,Sub>()->x == 3;
+        auto eq = global::instance<A>()->x == 3;
         QVERIFY(eq);
     }
 
     {
-        auto eq = global::instance<A,Sub>()->y == "bla";
+        auto eq = global::instance<A>()->y == "bla";
         QVERIFY(eq);
     }
 
@@ -198,43 +132,25 @@ void RegistrationTest::TestInstanceBasicallyWorks()
 
 }
 
-void RegistrationTest::TestInstanceBasicallyWorksSub()
-{
-    struct Sub{};
-
-    struct A { virtual int foo(){ return 4; }};
-    global::SubTestInstance<A,Sub> a;
-
-    {
-        struct A_Mock : public A { int foo() override { return 5; }};
-        global::SubTestInstance<A,Sub, A_Mock> a_mock;
-
-        const auto val = global::instance<A,Sub>()->foo();
-        QCOMPARE(val,5);
-    }
-
-    const auto val = global::instance<A,Sub>()->foo();
-    QCOMPARE(val,4);
-}
 
 void RegistrationTest::InstanceWorksWithStdMap()
 {
-    struct Sub{};
+    
 
     struct A { int x; };
 
     using Map = std::map<std::string,A>;
-    global::SubInstance<Map,Sub> a { Map{
+    global::Instance<Map> a { Map{
             {"hans", A{1}},
             {"wurst",A{2}}}};
 
     {
-        const auto val = global::instance<Map,Sub>()->find("hans")->second.x;
+        const auto val = global::instance<Map>()->find("hans")->second.x;
         QCOMPARE(val,1);
     }
 
     {
-        const auto val = global::instance<Map,Sub>()->find("wurst")->second.x;
+        const auto val = global::instance<Map>()->find("wurst")->second.x;
         QCOMPARE(val,2);
     }
 
@@ -257,8 +173,8 @@ private:
 
 void RegistrationTest::privateConstructorsCanBeUsed(){
 
-    struct Sub{};
-    global::SubInstance<AX,Sub> a;
+    
+    global::Instance<AX> a;
 }
 
 struct AY{
@@ -270,8 +186,8 @@ private:
 
 void RegistrationTest::privateConstructorsCanBeUsedWithMacro()
 {
-    struct Sub{};
-    global::SubInstance<AY,Sub> a;
+    
+    global::Instance<AY> a;
 }
 
 

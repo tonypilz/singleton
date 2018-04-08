@@ -3,9 +3,7 @@
 namespace global {
 namespace detail {
 
-struct staticValueSubDefault{};
-
-template<typename T, typename Sub = staticValueSubDefault>
+template<typename T>
 T& staticValue(){
     static T t;
     return t;

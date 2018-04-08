@@ -27,26 +27,7 @@ void InstanceTest::anUnregisteredInstanceIsNotAccessible()
     QVERIFY(instance<A>()==nullptr);
 }
 
-void InstanceTest::anUnregisteredSubInstanceIsNotAccessible()
-{
-    A a;
 
-    detail::InstanceRegistration<A> registration;
-    registration(&a);
-
-    const bool def = instance<A,Sub>()!=nullptr;
-    QCOMPARE(def,true);
-}
-
-void InstanceTest::aRegisteredSubInstanceIsAccessible()
-{
-    A a;
-    detail::InstanceRegistration<A,Sub> registration;
-    registration(&a);
-
-    const bool def = instance<A,Sub>()!=nullptr;
-    QCOMPARE(def,true);
-}
 
 void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
 {
@@ -58,22 +39,6 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
     detail::InstanceRegistration<A> registration(&b);
 
     auto res = dynamic_cast<B*>(static_cast<A*>(instance<A>()));
-
-    QCOMPARE(res->x,val);
-}
-
-void InstanceTest::aDerivedSubInstanceIsAccessibleWithoutSlicing()
-{
-    constexpr int val = 77;
-
-    struct A{virtual ~A() = default;};
-    struct B : public A{ int x = val; };
-
-    B b;
-
-    detail::InstanceRegistration<A,Sub> registration(&b);
-
-    auto res = dynamic_cast<B*>(static_cast<A*>(instance<A,Sub>()));
 
     QCOMPARE(res->x,val);
 }
@@ -134,16 +99,6 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
     QCOMPARE(called,true);
 }
 
-void InstanceTest::functionWillBeCalledDirectlyIfSubInstanceDefined()
-{
-    A a;
-    detail::InstanceRegistration<A,Sub> registration(&a);
-
-    bool called = false;
-    instance<A,Sub>().ifAvailable([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
-
-    QCOMPARE(called,true);
-}
 
 void InstanceTest::functionWillBeCalledDirectlyIfInstanceUndefined()
 {
@@ -155,15 +110,6 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceUndefined()
     QCOMPARE(called,true);
 }
 
-void InstanceTest::functionWillBeCalledDirectlyIfSubInstanceUndefined()
-{
-    A a;
-
-    bool called = false;
-    instance<A,Sub>().ifUnavailable([&called,&a](){ called = true;  });
-
-    QCOMPARE(called,true);
-}
 
 void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
 {
@@ -178,19 +124,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
     QCOMPARE(called,true);
 }
 
-void InstanceTest::functionWillBeCalledIfSubInstanceIsDefined()
-{
-    A a;
 
-    bool called = false;
-    instance<A,Sub>().ifAvailable([&called,&a](A&r){ called = true; QCOMPARE(&r,&a); });
-
-    QCOMPARE(called,false);
-
-    detail::InstanceRegistration<A,Sub> registration(&a);
-
-    QCOMPARE(called,true);
-}
 
 void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
 {
@@ -206,19 +140,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
     QCOMPARE(called,true);
 }
 
-void InstanceTest::functionWillBeCalledIfSubInstanceIsUndefined()
-{
-    A a;
 
-    bool called = false;
-    {
-        detail::InstanceRegistration<A,Sub> registration(&a);
-        instance<A,Sub>().ifUnavailable([&called,&a](){ called = true; });
-        QCOMPARE(called,false);
-    }
-
-    QCOMPARE(called,true);
-}
 
 void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
 {
@@ -289,42 +211,9 @@ void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
     QCOMPARE(funcCallCount,1);
 }
 
-void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined()
-{
-    A a;
-
-    detail::InstanceRegistration<A,Sub> registration(&a);
-
-    int funcCallCount = 0;
 
 
-    instance<A,Sub>().addDeferredOperation(
-                [&]( A* const&p){
-                    if (p!=&a) return pending;
-                    ++funcCallCount;
-                    return finished;});
-
-    QCOMPARE(funcCallCount,1);
-}
-
-void InstanceTest::conditionalFunctionWillBeCalledIfSubInstanceDefined()
-{
-    A a;
-
-    int funcCallCount = 0;
-
-    instance<A,Sub>().addDeferredOperation(
-                [&](A* const&p){
-                    if (p!=&a) return pending;
-                    ++funcCallCount;
-                    return finished;});
-
-    detail::InstanceRegistration<A,Sub> registration(&a);
-
-    QCOMPARE(funcCallCount,1);
-}
-
-void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChange()
+void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnInstanceChange()
 {
     A a;
 
@@ -344,8 +233,8 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
                         return finished;};
     const int n = 20;
     for(int i = 0;i<n;++i){
-        instance<A,Sub>().addDeferredOperation(func1);
-        instance<A,Sub>().addDeferredOperation(func2);
+        instance<A>().addDeferredOperation(func1);
+        instance<A>().addDeferredOperation(func2);
     }
 
     QCOMPARE(funcCallCount1,0);
@@ -355,7 +244,7 @@ void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnSubInstanceChan
 
     {
 
-        detail::InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A> registration(&a);
 
         QCOMPARE(funcCallCount1,n);
         QCOMPARE(funcCallCount2,0);
@@ -381,18 +270,18 @@ void InstanceTest::recursiveQueuingWorks()
 
     auto func1 = [&](A* const&p){
                     if (p!=&a) return pending;
-                    instance<A,Sub>().addDeferredOperation(func2);
+                    instance<A>().addDeferredOperation(func2);
                     ++funcCallCount1;
                     return finished;};
 
-    instance<A,Sub>().addDeferredOperation(func1);
+    instance<A>().addDeferredOperation(func1);
 
 
     QCOMPARE(funcCallCount1,0);
     QCOMPARE(funcCallCount2,0);
 
     {
-        detail::InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A> registration(&a);
 
         QCOMPARE(funcCallCount1,1);
         QCOMPARE(funcCallCount2,0);
@@ -402,7 +291,7 @@ void InstanceTest::recursiveQueuingWorks()
     QCOMPARE(funcCallCount2,1);
 
     {
-        detail::InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A> registration(&a);
 
         QCOMPARE(funcCallCount1,1);
         QCOMPARE(funcCallCount2,1);
@@ -416,15 +305,15 @@ void InstanceTest::registerForDestructionWorks()
 
     int funcCallCount = 0;
 
-    instance<A,Sub>().ifAvailable(
-                [&](A&){ instance<A,Sub>().ifUnavailable(
+    instance<A>().ifAvailable(
+                [&](A&){ instance<A>().ifUnavailable(
                     [&](){ ++funcCallCount;});
                        });
 
     QCOMPARE(funcCallCount,0);
 
     {
-        detail::InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A> registration(&a);
         QCOMPARE(funcCallCount,0);
     }
 
@@ -434,24 +323,24 @@ void InstanceTest::registerForDestructionWorks()
 void InstanceTest::instanceRefWorks()
 {
 
-    struct Sub{};
+
 
     struct A { int x; };
 
     using Map = std::map<std::string,A>;
-    global::SubInstance<Map,Sub> a { Map{
+    global::Instance<Map> a { Map{
             {"hans", A{1}},
             {"wurst",A{2}}}};
 
 
 
     {
-        const auto val = global::instanceRef<Map,Sub>()["hans"].x;
+        const auto val = global::instanceRef<Map>()["hans"].x;
         QCOMPARE(val,1);
     }
 
     {
-        const auto val = (*global::instance<Map,Sub>())["hans"].x;
+        const auto val = (*global::instance<Map>())["hans"].x;
         QCOMPARE(val,1);
     }
 
@@ -466,7 +355,7 @@ void InstanceTest::instanceBeforeIsAvailableToDefferedOperations()
 
     constexpr A* null = nullptr;
 
-    instance<A,Sub>().addDeferredOperationWithArgBefore(
+    instance<A>().addDeferredOperationWithArgBefore(
                 [&](A* b, A* c){
                     before = b;
                     current = c;
@@ -477,12 +366,12 @@ void InstanceTest::instanceBeforeIsAvailableToDefferedOperations()
     QCOMPARE(current,null);
 
     {
-        detail::InstanceRegistration<A,Sub> registration(&a);
+        detail::InstanceRegistration<A> registration(&a);
 
         QCOMPARE(before,null);
         QCOMPARE(current,&a);
 
-        detail::ReplacingInstanceRegistration<A,Sub> registration1(&b);
+        detail::ReplacingInstanceRegistration<A> registration1(&b);
 
         QCOMPARE(before,&a);
         QCOMPARE(current,&b);

@@ -36,7 +36,7 @@ void testB(){
 
 void main_mockable(){
 
-    global::Instance<A> a;                  //make 'a' globally accessible
+    global::Instance<A> a; (void) a;                //make 'a' globally accessible
 
     if (testing) testB();
 

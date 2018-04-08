@@ -15,26 +15,21 @@ signals:
 private slots:
 
     void leavingTheScopeOfASingleInstanceRegistrationDeregistersInstance();
-    void leavingTheScopeOfASubSingleInstanceRegistrationDeregistersInstance();
 
     void SingleInstanceRegistrationAllowsOnlySingleRegistration();
-    void singleInstanceSubRegistrationAllowsOnlySingleRegistration();
 
     void ReplacingInstanceRegistrationReplacesInstanceTemporarily();
-    void replacingInstanceSubRegistrationReplacesInstanceTemporarily();
 
     void registrationsCanBeChanged();
-    void registrationsSubCanBeChanged();
 
     void InstanceBasicallyWorks();
-    void InstanceBasicallyWorksSub();
 
     void InstanceBasicallyWorksWithBaseclass();
 
-    void InstanceBasicallyWorksWithArgsSub();
+    void InstanceBasicallyWorksWithArgs();
 
     void TestInstanceBasicallyWorks();
-    void TestInstanceBasicallyWorksSub();
+
 
     void InstanceWorksWithStdMap();
 

@@ -13,7 +13,6 @@ public:
 private:
 
     class A{};
-    class Sub{};
 
 signals:
 
@@ -21,11 +20,8 @@ private slots:
 
     void aRegisteredInstanceIsAccessible();
     void anUnregisteredInstanceIsNotAccessible();
-    void anUnregisteredSubInstanceIsNotAccessible();
-    void aRegisteredSubInstanceIsAccessible();
 
     void aDerivedInstanceIsAccessibleWithoutSlicing();
-    void aDerivedSubInstanceIsAccessibleWithoutSlicing();
 
     void gettingNullThrowsWithoutHandler();
     void gettingNullInvokesInstalledUntypeHandler();
@@ -33,16 +29,12 @@ private slots:
 
 
     void functionWillBeCalledDirectlyIfInstanceDefined();
-    void functionWillBeCalledDirectlyIfSubInstanceDefined();
 
     void functionWillBeCalledDirectlyIfInstanceUndefined();
-    void functionWillBeCalledDirectlyIfSubInstanceUndefined();
 
     void functionWillBeCalledIfInstanceIsDefined();
-    void functionWillBeCalledIfSubInstanceIsDefined();
 
     void functionWillBeCalledIfInstanceIsUndefined();
-    void functionWillBeCalledIfSubInstanceIsUndefined();
 
     void functionWillBeCalledOnlyOnceDirectly();
     void functionWillBeCalledOnlyOnceIndirectly();
@@ -50,10 +42,7 @@ private slots:
     void conditionalFunctionWillBeCalledDirectlyIfInstanceDefined();
     void conditionalFunctionWillBeCalledIfInstanceDefined();
 
-    void conditionalFunctionWillBeCalledDirectlyIfSubInstanceDefined();
-    void conditionalFunctionWillBeCalledIfSubInstanceDefined();
-
-    void functionsWithDifferentConditionsWillBeCalledOnSubInstanceChange();
+    void functionsWithDifferentConditionsWillBeCalledOnInstanceChange();
 
     void recursiveQueuingWorks();
     void registerForDestructionWorks();
