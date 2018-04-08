@@ -22,16 +22,16 @@ void *operator new[](std::size_t count)
     return malloc(count);
 }
 
-void *operator new(std::size_t count, const std::nothrow_t &)
-{
-    global::detail::do_throw(std::exception{}); //unexpected
-    return malloc(count);
-}
+//void *operator new(std::size_t count, const std::nothrow_t &)
+//{
+//    global::detail::do_throw(std::exception{}); //unexpected
+//    return malloc(count);
+//}
 
-void *operator new[](std::size_t count, const std::nothrow_t &)
-{
-    global::detail::do_throw(std::exception{}); //unexpected
-    return malloc(count);
-}
+//void *operator new[](std::size_t count, const std::nothrow_t &)
+//{
+//    global::detail::do_throw(std::exception{}); //unexpected
+//    return malloc(count);
+//}
 
 
