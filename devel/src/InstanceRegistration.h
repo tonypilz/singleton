@@ -67,8 +67,8 @@ public:
 
     void registerInstance(T* t) override{
 
-        if (instance<T>()!=nullptr) do_throw(InstanceReplacementNotAllowed{});
-        if (t==nullptr) do_throw(RegisteringNullNotAllowed{});
+        if (instance<T>()!=nullptr) throwImpl(InstanceReplacementNotAllowed{});
+        if (t==nullptr) throwImpl(RegisteringNullNotAllowed{});
 
         Superclass::registerInstance(t);
     }

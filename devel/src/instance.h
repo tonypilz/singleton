@@ -13,8 +13,5 @@ detail::InstancePointer<T>& instance(){ return detail::staticValue<detail::Insta
 template<typename T>
 T& instanceRef(){ return *detail::staticValue<detail::InstancePointer<T>>(); }
 
-inline NullptrAccessHandler::type& onNullptrAccess(){ return detail::staticValue<NullptrAccessHandler>().handler; } //global handler
-
-
 
 } //global

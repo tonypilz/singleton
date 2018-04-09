@@ -68,7 +68,7 @@ void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
 
     class UntypedTestHandler : public std::exception {};
 
-    onNullptrAccess() = [](){ detail::do_throw(UntypedTestHandler{});};
+    onNullptrAccess() = [](){ detail::throwImpl(UntypedTestHandler{});};
 
 
     class A{};
@@ -101,7 +101,7 @@ void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
     auto& ht = instance<A>().onNullPtrAccess;
 
 
-    hu = [](){ detail::do_throw(UntypedTestHandler());};
+    hu = [](){ detail::throwImpl(UntypedTestHandler());};
     ht = [&a](){ return &a;};
 
     QCOMPARE(static_cast<A*>(instance<A>()),&a);

@@ -16,7 +16,7 @@ namespace tests {
 
 
 void testFailed(){
-    detail::do_throw(std::exception{});
+    detail::throwImpl(std::exception{});
 }
 
 TestMain::TestMain(int argc, char* argv[])

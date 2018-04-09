@@ -59,7 +59,7 @@ private:
     T* handleNull() const{
         if (onNullPtrAccess) return onNullPtrAccess();
         if (onNullPtrAccessUntyped) onNullPtrAccessUntyped(); //if this returns we execute global handler
-        detail::staticValue<NullptrAccessHandler>().handler(); //global handler should always be there
+        onNullptrAccess(); //global handler should always be there
         return nullptr; //shouldnt be reached
     }
 

@@ -7,10 +7,10 @@ namespace global {
 
 class NullptrAccess : public std::exception {};
 
+inline std::function<void()>& onNullptrAccess(){
+    static std::function<void()> f = [](){ detail::throwImpl(NullptrAccess{});};
+    return f;
 
-struct NullptrAccessHandler {
-    using type = std::function<void()>;
-    type handler = [](){ detail::do_throw(NullptrAccess{});};
-};
+} //global handler
 
 }

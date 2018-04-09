@@ -25,7 +25,7 @@ public:
     }
 
     explicit operator T() const{
-        if (!m_hasValue)  do_throw(bad_optional_access{});
+        if (!m_hasValue)  throwImpl(bad_optional_access{});
         return val;
     }
 
