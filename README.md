@@ -58,7 +58,7 @@ The remainder of the document discusses the library in more detail.
         - [Program Startup/Shutdown Status](#program-startupshutdown-status)
         - [Customizing the Library](#customizing-the-library)
         - [Comparision to Classical Singleton](#comparision-to-classical-singleton)
-            - [Comparision to Other Libraries](#comparision-to-other-libraries)
+            - [Other Libraries](#other-libraries)
 - [Under the Hood](#under-the-hood)
 
 <!-- /TOC -->
@@ -681,22 +681,21 @@ And library adresses its drawbacks, which are:
 The linked sections explain in more detail why they are drawbacks and how they are improved by this library.
 
 
-#### Comparision to Other Libraries
+#### Other Libraries
 
-Most of the singleton libraries found on github in April 2018 were demos/examples or random implementations within other projects. The remaining dedicated singleton implementations will be compared in the following table: 
+Most of the singleton libraries found on github in April 2018 were demos/examples or random implementations within other projects. The remaining dedicated singleton implementations will be compared in the following table. The indicators are __+__ for improvement over the classical singelton, __=__ for comparable, __-__ for worsening. The numbers 1-5 refer to the drabacks listed above.
 
-| Feature  | supports instance replace-ment for testing  | 2-phase init-tialization avoidable | control over cons-truction seqence  | control over des-truction seqence  | control over des-truction point in time  | auto-matic des-truc-tion  | cons-tructor argu-ments  | thread-save cons-truc-tion  | imple-men-tation pattern | forces virtual des-tructor  | thread local ins-tances  |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
- |  This Lib  |  X  |  X  |  full  |  full  |   full  |  X  |  X  |  -  |  indep. class<sup>6</sup> |  -  |  -  |
- |  [Classical Singleton](#comparision-with-the-classical-singleton)  |  -  |  -  |  limited  |  none  |  none  |  X  |  -  |  X  |  function  |  -  |  -  |
- |  [herpe]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  X<sup>1</sup>  |  X  |  CRTP<sup>7</sup> |  X  |  -  |
- |  [ugrif]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -  |  -  |  -  |  macro  |  -  |  -  |
- |  [xytis]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -<sup>3</sup>  |  -  |  -  |   indep. class   |  -  |  -  |
- |  [aworx]  |  -  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -  |  -  |  X<sup>5</sup>  |  CRTP  |  X  |  -  |
- |  [fwolt]  |  -  |  -  |  limited  |  none  |  none  |  X  |  X  |  X  |  CRTP  |  -  |  -  |
- |  [zyf38]  |  -  |  -  |  limited<sup>2</sup>  |  none  |  none  |  X  |  -  |  X  |  indep. class  |  -  |  -  |
- |  [cheno]  |  X  |  -  |  limited<sup>2</sup>  |  full  |  full  |  -<sup>4</sup>  |  -  |  X  |  indep. class  |  -  |  X  |
- |  [cppma] |  X |  - |  full<sup>2</sup> |  full |  full |  X |  up to 4 |  optional |  indep. class |  - |  - |
+| Aspect  | 1 | 2 | 3             | 4 | 5             | automatic destruction | threadsave construction | forces virtual destructor | thread local instances |
+|----------|---|---|---------------|---|---------------|--------------------------|---------------------------|----------------------------|-------------------------|
+| This Lib | + | + | +             | + | +             | =                        | -                         | =                          | =                       |
+| [herpe]  | = | = | =<sup>2</sup> | = | =<sup>1</sup> | =                        | =                         | -                          | =                       |
+| [ugrif]  | = | = | =<sup>2</sup> | + | =             | -                        | -                         | =                          | =                       |
+| [xytis]  | = | = | =<sup>2</sup> | + | =             | -<sup>3</sup>            | -                         | =                          | =                       |
+| [aworx]  | = | = | =<sup>2</sup> | + | =             | -                        | -<sup>5</sup>             | -                          | =                       |
+| [fwolt]  | = | = | =             | = | +             | =                        | =                         | =                          | =                       |
+| [zyf38]  | = | = | =<sup>2</sup> | = | =             | =                        | =                         | =                          | =                       |
+| [cheno]  | + | = | =<sup>2</sup> | + | =             | -<sup>4</sup>            | =                         | =                          | +                       |
+| [cppma]  | + | = | +<sup>2</sup> | + | +<sup>6</sup> | =                        | =                         | =                          | =                       |
 
  <sup>1</sup> Implementation of constructor arguments incorrect
 
@@ -708,9 +707,9 @@ Most of the singleton libraries found on github in April 2018 were demos/example
 
  <sup>5</sup> Implementation of manual locking/unlocking incorrect
 
- <sup>6</sup> indep. class = independed free standing class(es) which do not require inheritance
+ <sup>6</sup> Up to 4 Arguments
  
- <sup>7</sup> CRTP = curiously recurring template pattern
+
 
 
 [herpe]: https://github.com/herpec-j/Singleton
