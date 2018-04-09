@@ -152,14 +152,13 @@ void DeferredOperationsTest::operatorNewNotUsedOnFinishedFunctions()
     op.addDeferredOperationWithArgBefore([&](A const*,A const*){ return finished; },nullptr);
     op.addDeferredOperation([&](A const*){ return finished; },nullptr);
     op.ifAvailable([&](A const&){ },&a);
-    op.ifUnavailable([&](){ },nullptr);
 
     QCOMPARE(newCountBefore,newCallCount());
 
     op.addDeferredOperationWithArgBefore([&](A const*,A const*){ return pending; },nullptr);
     op.addDeferredOperation([&](A const*){ return pending; },nullptr);
     op.ifAvailable([&](A const&){ },nullptr);
-    op.ifUnavailable([&](){ },&a);
+    op.becomesUnavailable([&](A&){ },&a);
 
     QVERIFY(newCallCount()>=(newCountBefore+4));
 

@@ -47,8 +47,8 @@ public:
     }
 
     template<typename Func >
-    void ifUnavailable(Func func){
-        deferredOperations.ifUnavailable(func,instancePtr);
+    void becomesUnavailable(Func func){
+        deferredOperations.becomesUnavailable(func,instancePtr);
     }
 
     std::function<T*()> onNullPtrAccess;

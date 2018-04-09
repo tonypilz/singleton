@@ -41,12 +41,16 @@ public:
     }
 
     template<typename Func >
-    void ifUnavailable(Func func,TargetInstance* current){
-        addDeferredOperation(
-                    [func](TargetInstance* current) {
-                        if (current!=nullptr) return DeferredOperationState::pending;
-                        func();
-                        return DeferredOperationState::finished;
+    void becomesUnavailable(Func func,TargetInstance* current){
+        addDeferredOperationWithArgBefore(
+                    [func](TargetInstance* before, TargetInstance* current) {
+                        if (current==nullptr && before != nullptr) {
+                            func(*before);
+                            return DeferredOperationState::finished;
+                        }
+
+                        return DeferredOperationState::pending;
+
         },current);
     }
 

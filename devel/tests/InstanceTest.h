@@ -26,11 +26,11 @@ private slots:
 
     void functionWillBeCalledDirectlyIfInstanceDefined();
 
-    void functionWillBeCalledDirectlyIfInstanceUndefined();
+    void unavailableFunctionWillNotBeCalledDirectlyIfInstanceUndefined();
 
     void functionWillBeCalledIfInstanceIsDefined();
 
-    void functionWillBeCalledIfInstanceIsUndefined();
+    void undefinedFunctionWillBeCalledIfInstanceGetsUndefined();
 
     void functionWillBeCalledOnlyOnceDirectly();
     void functionWillBeCalledOnlyOnceIndirectly();

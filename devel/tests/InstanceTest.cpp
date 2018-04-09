@@ -125,16 +125,16 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
 }
 
 
-void InstanceTest::functionWillBeCalledDirectlyIfInstanceUndefined()
+void InstanceTest::unavailableFunctionWillNotBeCalledDirectlyIfInstanceUndefined()
 {
     class A{};
 
     A a;
 
     bool called = false;
-    instance<A>().ifUnavailable([&called,&a](){ called = true;  });
+    instance<A>().becomesUnavailable([&called,&a](A&){ called = true;  });
 
-    QCOMPARE(called,true);
+    QCOMPARE(called,false);
 }
 
 
@@ -155,7 +155,7 @@ void InstanceTest::functionWillBeCalledIfInstanceIsDefined()
 
 
 
-void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
+void InstanceTest::undefinedFunctionWillBeCalledIfInstanceGetsUndefined()
 {
 
     class A{};
@@ -164,12 +164,14 @@ void InstanceTest::functionWillBeCalledIfInstanceIsUndefined()
 
     bool called = false;
     {
+        instance<A>().becomesUnavailable([&called,&a](A&){ called = true; });
+        QCOMPARE(called,false);
         detail::InstanceRegistration<A> registration(&a);
-        instance<A>().ifUnavailable([&called,&a](){ called = true; });
         QCOMPARE(called,false);
     }
 
     QCOMPARE(called,true);
+
 }
 
 
@@ -352,8 +354,8 @@ void InstanceTest::registerForDestructionWorks()
     int funcCallCount = 0;
 
     instance<A>().ifAvailable(
-                [&](A&){ instance<A>().ifUnavailable(
-                    [&](){ ++funcCallCount;});
+                [&](A&){ instance<A>().becomesUnavailable(
+                    [&](A&){ ++funcCallCount;});
                        });
 
     QCOMPARE(funcCallCount,0);
@@ -434,7 +436,6 @@ void InstanceTest::operatorNewNotUsedOnFinishedFunctions()
 
     instance<A>().addDeferredOperationWithArgBefore([&](A const*,A const*){ return finished; });
     instance<A>().addDeferredOperation([&](A const*){ return finished; });
-    instance<A>().ifUnavailable([&](){ });
 
     QCOMPARE(newCountBefore,newCallCount());
 
