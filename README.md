@@ -1,6 +1,6 @@
 # Overview
 
-The library allows the construction of and access to global instances like the classical singleton, but fixing most of its [drawbacks](#comparision-with-the-classical-singleton).
+The library allows the construction of and access to global instances like the classical singleton, but fixing most of its [drawbacks](#comparision-to-classical-singleton).
 
 The following example illustrates the main usage of the library. It shows how to construct an instance of type `A`, make it globally accessible, access it and how it is destructed.
 
@@ -49,13 +49,16 @@ The remainder of the document discusses the library in more detail.
         - [How to Remove the Compiler Warnings About Unused Variables](#how-to-remove-the-compiler-warnings-about-unused-variables)
         - [Behaviour on Exceptions](#behaviour-on-exceptions)
         - [Static Destruction](#static-destruction)
+        - [Advantages of having Full Control over Instance Construction/Destruction](#advantages-of-having-full-control-over-instance-constructiondestruction)
+            - [Sequence of Construction/Destruction](#sequence-of-constructiondestruction)
+            - [Timepoint of Destruction](#timepoint-of-destruction)
         - [Use on Embedded Devices](#use-on-embedded-devices)
         - [How to use Multiple Instances of the Same Type](#how-to-use-multiple-instances-of-the-same-type)
         - [Private Constructors](#private-constructors)
         - [Program Startup/Shutdown Status](#program-startupshutdown-status)
         - [Customizing the Library](#customizing-the-library)
-        - [Comparision with the Classical Singleton](#comparision-with-the-classical-singleton)
-        - [Comparision to Other Libraries](#comparision-to-other-libraries)
+        - [Comparision to Classical Singleton](#comparision-to-classical-singleton)
+            - [Comparision to Other Libraries](#comparision-to-other-libraries)
 - [Under the Hood](#under-the-hood)
 
 <!-- /TOC -->
@@ -80,7 +83,7 @@ The compiler flag `-std=c++11` is used
  
 ## Installation
 
-just copy the single header file [globalInstances.h](include/globalInstances.h) (~200sloc) into the project and include it (see in the first example).
+just copy the single header file [globalInstances.h](include/globalInstances.h) (~240sloc) into the project and include it (see in the first example).
 
 # Library Aspects
 ## How to do Testing 
@@ -250,6 +253,7 @@ struct C{
  }
 };
 ```
+Queuing calls for destruction are also possible (see example [here](#program-startupshutdown-status)).
 
 Arbitrary conditions can also be used in conjunction with deferred calls:
 
@@ -273,7 +277,7 @@ struct D{
 ```
 The deferred operation will be called each time the instance of `global::instance<A>()` changes until `DeferredOperationState::finished` is returned by the operation.
 
-Also note that pending deferred operations for an instance `A` will be reexecuted if some operation was finished. 
+Also note that the pending operations for an instance `A` will be reexecuted if at least one of the executed operations returned `finished` which allows them to depend on each other.
 
 ## How to Pass Arguments to the Constructor
 
@@ -407,17 +411,114 @@ If a deferred call throws, some of the unexecuted deferred calls will be discard
 ### Static Destruction
 Since static variables are used to provide global instance access one should keep in mind that they will be destroyed during static destruction and that they should not be used anyomore at that point in time. The general recommendation is to not access global instances anymore after leaving function main.
 
+### Advantages of having Full Control over Instance Construction/Destruction
+
+The approach of the library to separate instance access management from instances lifetime management gives the user full control over 
+1. sequence of construction/destruction
+1. timepoint of destruction
+
+which brings following advantages compared to the singleton:
+
+#### Sequence of Construction/Destruction
+In the case of classical singeltons, instances are constructed as they are used the first time. Therefore the sequence of construction is subject to unexpected change if classes get changed which is true even if all instances are created in function `main()` since new depencencies could arise over time. In the following example the instances are not created as they are initialized in the main-function:
+
+```cpp
+template<typename T>
+T& instance() {
+    static T t;
+    return t;
+}
+
+struct B{ void foo(); };
+struct A{ A(){ instance<B>().foo(); }};
+
+void main(){
+    instance<A>();     
+    instance<B>();    // instance of B created BEFORE instance of A
+}
+```
+
+Additionally, people also tend to forget adding an initializing call of their globals to function main.
+
+The same problem applies for the sequence of destruction since destruction sequence is the inverse of the construction sequence. So reasoning about it is as difficult so reliance on it is not recommended.
+
+The library improves the classical singleton by having a defined the sequence of construction and destruction:
+
+```cpp
+#include <globalInstances.h>
+
+struct B{ void foo(); };
+struct A{ A(){ instance<B>()->foo(); }};    // throws since B is not constructed yet
+
+void main(){
+    global::Instance<A> a;     
+    global::Instance<B> b;    
+}
+```
+
+Having a defined sequence of initialization eventually allows for better reasoning about the code and therefore reduces the likelihood of error and might also save some code which deals with initialization uncertainty.
+
+
+Note: See section [How to Avoid Two-Phase Initialization](#how-to-avoid-two-phase-initialization) for a way to avoid throwing an exception here.
+
+#### Timepoint of Destruction
+
+In the case of classical singeltons destructors of global instances are of limited use since they cannot savely access other singletons because they cannot determine programatically if other global instances have been destructed already and determining it manually is brittle (see section above).
+
+A variation of the classical singleton (eg used by google) do not destruct at all and lets the operating system do the clean up:
+
+```cpp
+template<typename T>
+T& instance() {
+    static T* t = new T();
+    return *t;
+}
+```
+
+This however disables the constructor completely. 
+
+The advantage of this library is that it allows regular usage of destructors given that they are executed before static destruction happens: (see [here](#static-destruction) for the reason) 
+
+```cpp
+struct A{ 
+    
+    void foo(); 
+
+    ~A(){ 
+        if (instance<B>()) instance<B>()->bar(); 
+    } 
+}; 
+
+struct B{ 
+    
+    void bar(); 
+    
+    ~B(){ 
+        if (instance<A>()) instance<A>()->foo(); 
+    } 
+};
+
+void main(){
+    global::Instance<A> a;     
+    global::Instance<B> b; 
+
+} // instance of B gets destructed first, then instance of A which is why B::bar()
+  // wont be called 
+```
+
+Note that in section [How to Avoid Two-Phase Initialization](#how-to-avoid-two-phase-initialization) is shown a way to have `B::bar()` called before destructing the instance of `B`.
+
 ### Use on Embedded Devices
 The library can be used in an embedded environment since it 
  - does not require runtime type information, 
- - calls operator `new`/`delete` only during startup and shutdown and 
- - can be used with exceptions disabled.
+ - calls operator `new`/`delete` only during startup and shutdown<sup>1</sup> and 
+ - can be used with exceptions disabled<sup>2</sup>.
 
-Notes:
 
-After all instances have been created, calls to instances eg `global::instance<T>()->foo()` do not invoke `new` new or `delete`. The same applies to all deferred calls eg `global::instance<T>().ifAvailable()` unless they cannot be executed directly.
 
-If exceptions are disabled all errors will be handled by invoking `exit()` instead of throwing an exception.
+<sup>1</sup>After all instances have been created, calls to instances eg `global::instance<T>()->foo()` do not invoke operator `new` new or `delete`. The same applies to all deferred calls eg `global::instance<T>().ifAvailable()` if they can be executed directly. So if they can not be executed directly because e.g an instance has not been created yet, the calls will be queued which invokes the operator `new`.
+
+<sup>2</sup>If exceptions are disabled all errors will be handled by invoking `exit()` instead of throwing an exception.
 
 
 ### How to use Multiple Instances of the Same Type
@@ -521,35 +622,33 @@ void main(){
            std::cout<<"All global instances constructed\n";
         });
 
+    global::instance<GlobalInstances>().becomesUnavailable(
+        [](GlobalInstances&){
+           std::cout<<"Global instances about to be destructed\n";
+        });
+
     global::instance<RunlevelX>().ifAvailable(
         [](RunlevelX&){
            std::cout<<"RunlevelX entered\n";
+        });
+
+    global::instance<RunlevelX>().becomesUnavailable(
+        [](RunlevelX&){
+           std::cout<<"RunlevelX left\n";
         });
 
     global::Instance<GlobalInstances> g;
 
     // all instances constructed, main loop can be entered
 
-    bar();
-
     mainLoop();
-
-    global::instance<GlobalInstances>().ifUnavailable(
-        [](GlobalInstances&){
-           std::cout<<"Global instances about to be destructed\n";
-        });
-
-    global::instance<RunlevelX>().ifUnavailable(
-        [](RunlevelX&){
-           std::cout<<"RunlevelX left\n";
-        });
 }
 
 void bar() {
-    bool v = global::instance<GlobalInstances>();
-    bool x =  global::instance<RunlevelX>();
-    std::cout << "All global instances available: " << v 
-              << ", runlevel X entered: " << x << "\n";
+    bool g = global::instance<GlobalInstances>();
+    bool r = global::instance<RunlevelX>();
+    std::cout << "All global instances available: " << g 
+              << ", runlevel X entered: " << r << "\n";
 }
 
 ```
@@ -558,21 +657,11 @@ As can be seen in the example, the instance of `GlobalInstances` has two purpose
 The indicator instance of type `RunelevelX` is used here to indicate a certain program startup and shutdown state. Therefore it can be used to trigger a two phase initialization. However, as discussed in [this section](#how-to-avoid-two-phase-initialization), a two phase initialization should be avoided if possible which is why there should rarely be the need for an indicator instance. 
 
 ### Customizing the Library
- Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
+ Since this library is rather small (~240 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
 
-### Comparision with the Classical Singleton
+### Comparision to Classical Singleton
 
-The library set out to adress the following minor and major drawbacks of the classical singleton:
- - testability
- - requiring a two-phase initialization
- - lack of control over the construction sequence of instances
- - lack of control over the destruction sequence of instances
- - mandatory destruction during static deinitialization
- - no arguments can be passed to the constructor of instances
-
-So the main difference to the classical singleton lies in the improvement of these drawbacks.
-
-Note: By classical singleton something like the following is meant:
+By classical singleton something like the following is meant here:
 
 ```cpp
 template<typename T>
@@ -582,11 +671,19 @@ T& instance() {
 }
 ```
 
+And library adresses its drawbacks, which are:
+ 1. [testability](#how-to-do-testing)
+ 1. [requiring a two-phase initialization](#how-to-avoid-two-phase-initialization)
+ 1. [lack of control over the construction/destruction sequence of instances](#sequence-of-constructiondestruction)
+ 1. [timepoint of destruction (if any) is always during static deinitialization](#timepoint-of-destruction)
+ 1. [no arguments can be passed to the constructor of instances](#how-to-pass-arguments-to-the-constructor)
+
+The linked sections explain in more detail why they are drawbacks and how they are improved by this library.
 
 
-### Comparision to Other Libraries
+#### Comparision to Other Libraries
 
-Most of the singleton libraries found on github in April 2018 were demos/examples or private implementations. The remainder will be compared in the following table: 
+Most of the singleton libraries found on github in April 2018 were demos/examples or random implementations within other projects. The remaining dedicated singleton implementations will be compared in the following table: 
 
 | Feature  | supports instance replace-ment for testing  | 2-phase init-tialization avoidable | control over cons-truction seqence  | control over des-truction seqence  | control over des-truction point in time  | auto-matic des-truc-tion  | cons-tructor argu-ments  | thread-save cons-truc-tion  | imple-men-tation pattern | forces virtual des-tructor  | thread local ins-tances  |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -616,7 +713,6 @@ Most of the singleton libraries found on github in April 2018 were demos/example
  <sup>7</sup> CRTP = curiously recurring template pattern
 
 
-
 [herpe]: https://github.com/herpec-j/Singleton
 [ugrif]: https://github.com/ugriffin/VSSynthesiseSingleton
 [xytis]: https://github.com/xytis/typedef-singleton
@@ -625,6 +721,7 @@ Most of the singleton libraries found on github in April 2018 were demos/example
 [zyf38]: https://github.com/zyf3883310/C-11-Thread-Safe-Singleton
 [cheno]: https://github.com/chenokay/selib
 [cppma]: https://github.com/cppmaven/Singularity
+
 # Under the Hood
  
  In oder to get an idea how the library is implemented it is sufficient to take a closer look at the two main expressions:
@@ -637,21 +734,24 @@ We begin with the accessor function, which has the signature
 detail::InstancePointer<A>& instance();
 ```
 
-It returns a reference to a static object of type `InstancePointer<A>` which is created on the first time the method is called. The object holds the pointer to the actual instance of type `A` which is accessed by calling `operator->` on it. If no instance of type `A` was registered before calling `operator->` the respective error handlers will be triggered. The class `InstancePointer<A>` also provides means to register callable objects which are called if the pointer to the actual instance changes. This enables the deferred calling mechanism. 
+It returns a reference to a static object of type `InstancePointer<A>` which is created on the first time the method is called. The object holds the pointer to the actual instance of type `A` which is accessed by calling `operator->` on it. If no instance of type `A` was registered before and `operator->` is called the respective error handlers will be triggered. The class `InstancePointer<A>` also provides means to register callable objects which are called if the pointer to the actual instance changes. This enables the deferred calling mechanism. 
 
-What we have not seen so far is how an instance of type `A` gets registered to the static object of type `InstancePointer<A>`. This is done by the second of the two main expressions, namely `global::Instance<A>` which constructs an instance of the following type:  
+What remains to be shown is how `InstancePointer<A>` gets the actual pointer of instance of type `A`. This is done by constructing an instance of type `global::Instance<A>` which (simplified) looks like:  
 
 ```cpp
-struct Instance<A> {
+template<typename T>
+struct Instance {
 
-    A a;
-    InstanceRegistration<A> reg;
+    T a;                               // construct the actual instance
+
+    InstanceRegistration<T> reg;       // scoped registration
     
-    Instance() : a, reg(&a) {}
+    Instance() : reg(&a) {}            // constructor of reg copies the adress of a to
+                                       // global InstancePointer<T>-instance 
 };
 ```
 
-As we can see `Instance<A>` contains the actualy instance `a` of type `A` as well as a registration object `reg` of type `InstanceRegistration<A>`. A registration object registers a given object pointer during its construction and deregisters it during its destruction. Thus `a` gets registered by `reg` after beeing constructed by `Instance<A>`. By register we mean that the address of the instance of a `A` is given to the respective static object of type `InstancePointer<A>`. Likewise deregister means here clearing the respective address.   
+As we can see `Instance<A>` constructs an instance of type `A` (=`a`) as well as a registration object `reg` of type `InstanceRegistration<A>`. The registration object copies the given adress of `a` during its construction to the global instance of `InstancePointer<A>` and clears it during its destruction.    
 
 This concludes the description of the basic mechanism. The rest of the functionality is a detail around the just described central mechanism, eg. error handling and checking. 
 
