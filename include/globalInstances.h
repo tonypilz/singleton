@@ -15,7 +15,7 @@ template <typename T> T &staticValue() {
   return t;
 }
 
-template <typename T> T &throwImpl(T t) {
+template <typename T> void throwImpl(T t) {
 
 #ifdef __cpp_exceptions
   throw t;

@@ -6,7 +6,7 @@ namespace global {
 namespace detail {
 
 template<typename T>
-T& throwImpl(T t){
+void throwImpl(T t){
 
 #ifdef __cpp_exceptions
     throw t;
