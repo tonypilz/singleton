@@ -685,17 +685,17 @@ The linked sections explain in more detail why they are drawbacks and how they a
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or random implementations within other projects. The remaining dedicated singleton implementations will be compared in the following table. The indicators are __+__ for improvement over the classical singelton, __=__ for comparable, __-__ for worsening. The numbers 1-5 refer to the drabacks listed above.
 
-| Aspect  | 1 | 2 | 3             | 4 | 5             | automatic destruction | threadsave construction | forces virtual destructor | thread local instances |
-|----------|---|---|---------------|---|---------------|--------------------------|---------------------------|----------------------------|-------------------------|
-| This Lib | + | + | +             | + | +             | =                        | -                         | =                          | =                       |
-| [herpe]  | = | = | =<sup>2</sup> | = | =<sup>1</sup> | =                        | =                         | -                          | =                       |
-| [ugrif]  | = | = | =<sup>2</sup> | + | =             | -                        | -                         | =                          | =                       |
-| [xytis]  | = | = | =<sup>2</sup> | + | =             | -<sup>3</sup>            | -                         | =                          | =                       |
-| [aworx]  | = | = | =<sup>2</sup> | + | =             | -                        | -<sup>5</sup>             | -                          | =                       |
-| [fwolt]  | = | = | =             | = | +             | =                        | =                         | =                          | =                       |
-| [zyf38]  | = | = | =<sup>2</sup> | = | =             | =                        | =                         | =                          | =                       |
-| [cheno]  | + | = | =<sup>2</sup> | + | =             | -<sup>4</sup>            | =                         | =                          | +                       |
-| [cppma]  | + | = | +<sup>2</sup> | + | +<sup>6</sup> | =                        | =                         | =                          | =                       |
+| Aspect   | 1 | 2 | 3             | 4 | 5             | automatic destruction | threadsave construction | forces virtual destructor | thread local instances | dependency   |
+|----------|---|---|---------------|---|---------------|-----------------------|-------------------------|---------------------------|------------------------|--------------|
+| This Lib | + | + | +             | + | +             | =                     | -                       | =                         | =                      | stl          |
+| [herpe]  | = | = | =<sup>2</sup> | = | =<sup>1</sup> | =                     | =                       | -                         | =                      | stl          |
+| [ugrif]  | = | = | =<sup>2</sup> | + | =             | -                     | -                       | =                         | =                      | /            |
+| [xytis]  | = | = | =<sup>2</sup> | + | =             | -<sup>3</sup>         | -                       | =                         | =                      | stl          |
+| [aworx]  | = | = | =<sup>2</sup> | + | =             | -                     | -<sup>5</sup>           | -                         | =                      | stl, ALib    |
+| [fwolt]  | = | = | =             | = | +             | =                     | =                       | =                         | =                      | stl, fw      |
+| [zyf38]  | = | = | =<sup>2</sup> | = | =             | =                     | =                       | =                         | =                      | stl          |
+| [cheno]  | + | = | =<sup>2</sup> | + | =             | -<sup>4</sup>         | =                       | =                         | +                      | stl, pthread |
+| [cppma]  | + | = | +<sup>2</sup> | + | +<sup>6</sup> | =                     | =                       | =                         | =                      | stl, boost   |
 
  <sup>1</sup> Implementation of constructor arguments incorrect
 
