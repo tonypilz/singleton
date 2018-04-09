@@ -9,6 +9,6 @@ T& staticValue(){
     return t;
 }
 
-
-} //detail
+}
 } //global
+

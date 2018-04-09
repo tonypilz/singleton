@@ -16,7 +16,6 @@ T& throwImpl(T t){
 #endif // __cpp_exceptions
 }
 
-} //detail
+}
 } //global
-
 

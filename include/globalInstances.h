@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdlib>
+#include <cstdlib> //for exit(1);
 #include <exception>
 #include <functional>
 #include <list>
@@ -8,19 +8,30 @@
 
 namespace global {
 
+namespace detail {
+
+template <typename T> T &staticValue() {
+  static T t;
+  return t;
+}
+
+template <typename T> T &throwImpl(T t) {
+
 #ifdef __cpp_exceptions
-namespace detail {
-
-template <typename T> T &do_throw(T t) { throw t; }
-
-} // namespace detail
-#else
-namespace detail {
-
-template <typename T> T &do_throw(T) { exit(1); }
-
-} // namespace detail
+  throw t;
+#else  // __cpp_exceptions
+  (void)t; // avoid unused
+  exit(1);
 #endif // __cpp_exceptions
+}
+
+} // namespace detail
+
+class NullptrAccess : public std::exception {};
+inline std::function<void()> &onNullptrAccess() {
+  static std::function<void()> f = []() { detail::throwImpl(NullptrAccess{}); };
+  return f;
+} //
 
 enum class DeferredOperationState { pending, finished };
 namespace detail {
@@ -92,21 +103,6 @@ private:
   Operations operations;
 };
 
-} // namespace detail
-
-class NullptrAccess : public std::exception {};
-struct NullptrAccessHandler {
-  using type = std::function<void()>;
-  type handler = []() { detail::do_throw(NullptrAccess{}); };
-};
-
-namespace detail {
-
-template <typename T> T &staticValue() {
-  static T t;
-  return t;
-}
-
 class bad_optional_access_impl : public std::exception {};
 
 using bad_optional_access =
@@ -125,7 +121,7 @@ public:
 
   explicit operator T() const {
     if (!m_hasValue)
-      do_throw(bad_optional_access{});
+      throwImpl(bad_optional_access{});
     return val;
   }
 
@@ -189,9 +185,8 @@ private:
       return onNullPtrAccess();
     if (onNullPtrAccessUntyped)
       onNullPtrAccessUntyped(); // if this returns we execute global handler
-    detail::staticValue<NullptrAccessHandler>()
-        .handler(); // global handler should always be there
-    return nullptr; // shouldnt be reached
+    onNullptrAccess();          // global handler should always be there
+    return nullptr;             // shouldnt be reached
   }
 
   InstancePointer &operator=(T *t) {
@@ -222,9 +217,6 @@ template <typename T> detail::InstancePointer<T> &instance() {
 template <typename T> T &instanceRef() {
   return *detail::staticValue<detail::InstancePointer<T>>();
 }
-inline NullptrAccessHandler::type &onNullptrAccess() {
-  return detail::staticValue<NullptrAccessHandler>().handler;
-} // global handler
 
 class InstanceReplacementNotAllowed : public std::exception {};
 class RegisteringNullNotAllowed : public std::exception {};
@@ -274,9 +266,9 @@ public:
   void registerInstance(T *t) override {
 
     if (instance<T>() != nullptr)
-      do_throw(InstanceReplacementNotAllowed{});
+      throwImpl(InstanceReplacementNotAllowed{});
     if (t == nullptr)
-      do_throw(RegisteringNullNotAllowed{});
+      throwImpl(RegisteringNullNotAllowed{});
 
     Superclass::registerInstance(t);
   }

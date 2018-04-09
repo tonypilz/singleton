@@ -3,10 +3,10 @@ import subprocess
 
 headerDir = '../src'
 headerFiles = [
-   'throwImpl.h',
-   'DeferredOperations.h',
-   'NullptrAccessHandler.h',
    'staticValue.h',
+   'throwImpl.h',
+   'NullptrAccessHandler.h',
+   'DeferredOperations.h',
    'OptionalValue.h',
    'InstancePointer.h',
    'instance.h',
@@ -55,6 +55,7 @@ def parse( fileContent ):
         dst.append(line)
 
     dst.append('\n')
+    assert bracketLevel==0
     
 
    
@@ -64,6 +65,7 @@ for headerFile in headerFiles:
         parse(f.readlines())
 
 namespaceDetailMerged = re.sub('\n}[\n| ].*\n*namespace detail {.*\n', '', ''.join(dst))
+#namespaceDetailMerged = ''.join(dst)
 
 with open(singleHeader,'w') as f:
     f.write('#pragma once\n')
