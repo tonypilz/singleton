@@ -6,6 +6,7 @@ addons:
     - g++-4.8
 language:
   - cpp
+  - clang
 compiler:
   - gcc
 before_install:
