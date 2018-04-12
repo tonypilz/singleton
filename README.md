@@ -65,7 +65,7 @@ The remainder of the document discusses the library in more detail.
 
 # Status
 
-[![Build Status](https://travis-ci.org/tonypilz/global-instances-access.svg?branch=master)](https://travis-ci.org/tonypilz/global-instances-access)
+[![Build Status](https://travis-ci.org/tonypilz/singleton.svg?branch=master)](https://travis-ci.org/tonypilz/singleton)
 
 ## Testing
 
