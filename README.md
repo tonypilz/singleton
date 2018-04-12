@@ -253,31 +253,7 @@ struct C{
  }
 };
 ```
-Queuing calls for destruction are also possible (see example [here](#program-startupshutdown-status)).
-
-Arbitrary conditions can also be used in conjunction with deferred calls:
-
-```cpp
-struct D{
- 
- D() {
-     global::instance<A>().addDeferredOperation(
-        [this](A* a){
-            if (a!=nullptr && this->someCondtion() && a->someOtherCondition()) {
-                this->baz(); 
-                return global::DeferredOperationState::finished;
-            }
-            return global::DeferredOperationState::pending;
-        });
- }
-
- bool someCondition();
- void baz();
-};
-```
-The deferred operation will be called each time the instance of `global::instance<A>()` changes until `DeferredOperationState::finished` is returned by the operation.
-
-Also note that the pending operations for an instance `A` will be reexecuted if at least one of the executed operations returned `finished` which allows them to depend on each other.
+Queuing for destruction is also possible (see example [here](#program-startupshutdown-status)).
 
 ## How to Pass Arguments to the Constructor
 
@@ -304,11 +280,11 @@ void main(){
  global::instance<A>().onNullPtrAccess =
           [](){ return new A(); };         // define a custom behaviour on invalid access
  
- global::instance<A>()->foo();             // invalid access
+ global::instance<A>()->foo();             // invalid access, '(new A())->foo()' will be called
 
 }
 ```
-In the example above a new dummy-instance of type `A` is created and used during the invalid access instead of throwing an exception.
+In the example above the call to `global::instance<A>()` invokes the custom handler, which returns a new instance of type `A` which is then used for calling `foo()` instead of throwing an exception.
 
 The same is possible with an untyped handler which will be called afterwards if defined: 
 ```cpp
@@ -325,13 +301,18 @@ void main(){
 ```
 The untyped handler can either throw or do nothing which invokes the global handler, which can also be customized:
 ```cpp
+
+namespace global {
+template<> void onNullPtrAccess<>(){  
+    throw "oops";
+}
+}
+
 void main(){
 
  struct A{ void foo(){} };
- 
- global::onNullptrAccess() = [](){ throw "this is not good"; };
- 
- global::instance<A>()->foo();
+
+ global::instance<A>()->foo();         // throws "oops" 
 
 }
 ```
@@ -687,7 +668,7 @@ Most of the singleton libraries found on github in April 2018 were demos/example
 
 | Aspect   | 1 | 2 | 3             | 4 | 5             | automatic destruction | threadsave construction | forces virtual destructor | thread local instances | dependency   |
 |----------|---|---|---------------|---|---------------|-----------------------|-------------------------|---------------------------|------------------------|--------------|
-| This Lib | + | + | +             | + | +             | =                     | -                       | =                         | =                      | stl          |
+| This Lib | + | + | +             | + | +             | =                     | -<sup>7</sup>                       | =                         | =                      | stl          |
 | [herpe]  | = | = | =<sup>2</sup> | = | =<sup>1</sup> | =                     | =                       | -                         | =                      | stl          |
 | [ugrif]  | = | = | =<sup>2</sup> | + | =             | -                     | -                       | =                         | =                      | /            |
 | [xytis]  | = | = | =<sup>2</sup> | + | =             | -<sup>3</sup>         | -                       | =                         | =                      | stl          |
@@ -702,13 +683,14 @@ Most of the singleton libraries found on github in April 2018 were demos/example
  <sup>2</sup> Possibly susceptible to static initialization order problems due to using raw static variables
 
  <sup>3</sup> Access after manual destruction causes undefined behaviour
- 
+
  <sup>4</sup> Requires setting the instance manually to `nullptr` after deleting it manually
 
  <sup>5</sup> Implementation of manual locking/unlocking incorrect
 
  <sup>6</sup> Up to 4 Arguments
- 
+
+ <sup>7</sup> See section [Thread Savety](#thread-savety)
 
 
 
