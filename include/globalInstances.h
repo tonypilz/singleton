@@ -28,80 +28,13 @@ template <typename T> void throwImpl(T t) {
 } // namespace detail
 
 class NullptrAccess : public std::exception {};
-inline std::function<void()> &onNullptrAccess() {
-  static std::function<void()> f = []() { detail::throwImpl(NullptrAccess{}); };
-  return f;
-} //
+template <typename T = void> void onNullPtrAccess() {
+  detail::throwImpl(NullptrAccess{});
+}
+// override by spcializing
+// template<> void onNullPtrAccess<>(){ exit(1); }
 
-enum class DeferredOperationState { pending, finished };
 namespace detail {
-
-template <typename TargetInstance> class DeferredOperations {
-public:
-  template <typename Op>
-  void addDeferredOperationWithArgBefore(Op func, TargetInstance *current) {
-    if (func(current, current) == DeferredOperationState::finished)
-      return;
-    operations.emplace_back(func);
-  }
-
-  template <typename Op>
-  void addDeferredOperation(Op func, TargetInstance *current) {
-    addDeferredOperationWithArgBefore(
-        [func](TargetInstance * /*before*/, TargetInstance *current) {
-          return func(current);
-        },
-        current);
-  }
-
-  template <typename Func>
-  void ifAvailable(Func func, TargetInstance *current) {
-    addDeferredOperation(
-        [func](TargetInstance *current) {
-          if (current == nullptr)
-            return DeferredOperationState::pending;
-          func(*current);
-          return DeferredOperationState::finished;
-        },
-        current);
-  }
-
-  template <typename Func>
-  void becomesUnavailable(Func func, TargetInstance *current) {
-    addDeferredOperationWithArgBefore(
-        [func](TargetInstance *before, TargetInstance *current) {
-          if (current == nullptr && before != nullptr) {
-            func(*before);
-            return DeferredOperationState::finished;
-          }
-
-          return DeferredOperationState::pending;
-
-        },
-        current);
-  }
-
-  void conditionsChanged(TargetInstance *before,
-                         TargetInstance *current) { // while find
-    auto copy = std::move(operations);
-    operations.clear();
-    for (auto const &op : copy) {
-      // op(t) might add new operations to 'operations', but only non with state
-      // pending since direct operations will be executed instantly!
-      if (op(before, current) == DeferredOperationState::pending)
-        operations.push_back(std::move(op));
-    }
-
-    if (copy.size() != operations.size())
-      conditionsChanged(before, current);
-  }
-
-private:
-  using Operation = DeferredOperationState(
-      TargetInstance *, TargetInstance *); // todo remove const
-  using Operations = std::list<std::function<Operation>>;
-  Operations operations;
-};
 
 class bad_optional_access_impl : public std::exception {};
 
@@ -146,65 +79,57 @@ public:
   bool operator==(T const *t) const { return instancePtr == t; }
   bool operator!=(T const *t) const { return instancePtr != t; }
 
-  explicit operator const T *() const { return operator->(); }
-  explicit operator T *() { return operator->(); }
+  explicit operator T *() const { return operator->(); }
 
-  const T &operator*() const & { return *instancePtr; }
-  T &operator*() & { return *instancePtr; }
-
-  const T *operator->() const {
-    return instancePtr != nullptr ? instancePtr : handleNull();
-  }
-  T *operator->() {
-    return instancePtr != nullptr ? instancePtr : handleNull();
-  }
-
-  template <typename Op> void addDeferredOperationWithArgBefore(Op func) {
-    deferredOperations.addDeferredOperationWithArgBefore(func, instancePtr);
-  }
-
-  template <typename DeferredOperation>
-  void addDeferredOperation(DeferredOperation op) {
-    deferredOperations.addDeferredOperation(op, instancePtr);
+  T &operator*() const & { return *instancePtr; }
+  T *operator->() const {
+    if (instancePtr == nullptr)
+      global::onNullPtrAccess<>();
+    return instancePtr;
   }
 
   template <typename Func> void ifAvailable(Func func) {
-    deferredOperations.ifAvailable(func, instancePtr);
+    if (instancePtr != nullptr) {
+      func(*instancePtr);
+      return;
+    }
+    ifAvailableOps.emplace_back(func);
   }
 
   template <typename Func> void becomesUnavailable(Func func) {
-    deferredOperations.becomesUnavailable(func, instancePtr);
+    becomesUnavailableOps.emplace_back(func); // never directly
   }
-
-  std::function<T *()> onNullPtrAccess;
-  std::function<void()> onNullPtrAccessUntyped;
 
 private:
-  T *handleNull() const {
-    if (onNullPtrAccess)
-      return onNullPtrAccess();
-    if (onNullPtrAccessUntyped)
-      onNullPtrAccessUntyped(); // if this returns we execute global handler
-    onNullptrAccess();          // global handler should always be there
-    return nullptr;             // shouldnt be reached
-  }
-
   InstancePointer &operator=(T *t) {
     if (instancePtr == t)
       return *this; // nothing changed
     auto before = instancePtr;
     instancePtr = t;
-    deferredOperations.conditionsChanged(before, instancePtr);
+
+    if (instancePtr != nullptr) {
+      for (auto const &op : ifAvailableOps)
+        op(*instancePtr);
+      ifAvailableOps.clear();
+    }
+    if (before != nullptr && instancePtr == nullptr) {
+      for (auto const &op : becomesUnavailableOps)
+        op(*before);
+      becomesUnavailableOps.clear();
+    }
     return *this;
   }
 
   template <typename> friend class ReplacingInstanceRegistration;
 
   using ClassType = InstancePointer<T>;
+
   InstancePointer(ClassType const &) = delete;
   ClassType const &operator=(ClassType const &) = delete;
 
-  detail::DeferredOperations<T> deferredOperations; // todo
+  using DeferredOperation = std::list<std::function<void(T &)>>;
+  DeferredOperation ifAvailableOps;
+  DeferredOperation becomesUnavailableOps;
 
   T *instancePtr = nullptr;
 };

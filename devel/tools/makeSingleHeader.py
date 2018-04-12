@@ -6,7 +6,6 @@ headerFiles = [
    'staticValue.h',
    'throwImpl.h',
    'NullptrAccessHandler.h',
-   'DeferredOperations.h',
    'OptionalValue.h',
    'InstancePointer.h',
    'instance.h',
