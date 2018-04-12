@@ -19,16 +19,10 @@ public:
     bool operator==(T const* t) const{  return instancePtr==t;}
     bool operator!=(T const* t) const{  return instancePtr!=t;}
 
+    explicit operator T*() const{  return operator ->(); }
 
-    explicit operator const T*() const{  return operator ->(); }
-    explicit operator T*() {  return operator ->(); }
-
-    const T& operator*() const& { return *instancePtr;}
-    T& operator*() & { return *instancePtr;}
-
-
-    const T* operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
-    T* operator->(){ return instancePtr!=nullptr ? instancePtr : handleNull(); }
+    T& operator*() const& { return *instancePtr;}
+    T* operator->() const{ return instancePtr!=nullptr ? instancePtr : handleNull(); }
 
 
     template<typename Op >
