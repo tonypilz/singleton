@@ -4,8 +4,6 @@
 
 using namespace global;
 
-constexpr auto pending = DeferredOperationState::pending;
-constexpr auto finished = DeferredOperationState::finished;
 
 InstanceTest::InstanceTest(QObject *parent) : QObject(parent)
 {
@@ -85,7 +83,7 @@ void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
     detail::InstanceRegistration<A> registration(&a);
 
     bool called = false;
-    instance<A>().ifAvailable([&called,&a](A const&r){ called = true; QCOMPARE(&r,&a); });
+    instance<A>().ifAvailable([&](A&r){ called = true; QCOMPARE(&r,&a); });
 
     QCOMPARE(called,true);
 }
@@ -142,7 +140,7 @@ void InstanceTest::undefinedFunctionWillBeCalledIfInstanceGetsUndefined()
 
 
 
-void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
+void InstanceTest::ifAvailable_willBeCalledDirectlyOnce()
 {
     class A{};
 
@@ -154,117 +152,76 @@ void InstanceTest::functionWillBeCalledOnlyOnceDirectly()
     instance<A>().ifAvailable([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
 
     QCOMPARE(callCount,1);
-    A b;
+    {
+        A b;
 
-    detail::ReplacingInstanceRegistration<A> registration1(&b);
+        detail::ReplacingInstanceRegistration<A> registration1(&b);
 
-    QCOMPARE(callCount,1);
-}
-
-void InstanceTest::functionWillBeCalledOnlyOnceIndirectly()
-{
-    class A{};
-
-    A a;
-
-    int callCount = 0;
-    instance<A>().ifAvailable([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
-
-    detail::InstanceRegistration<A> registration(&a);
-
-    QCOMPARE(callCount,1);
-
-    A b;
-    detail::ReplacingInstanceRegistration<A> registration1(&b);
-
-    QCOMPARE(callCount,1);
-}
-
-void InstanceTest::conditionalFunctionWillBeCalledDirectlyIfInstanceDefined()
-{
-    class A{};
-
-    A a;
-
-    detail::InstanceRegistration<A> registration(&a);
-
-    int funcCallCount = 0;
-
-    instance<A>().addDeferredOperation(
-                [&](A* const&p){
-                    if (p!=&a) return pending;
-                    ++funcCallCount;
-                    return finished;});
-
-    QCOMPARE(funcCallCount,1);
-
-}
-
-void InstanceTest::conditionalFunctionWillBeCalledIfInstanceDefined()
-{
-    class A{};
-
-    A a;
-
-    int funcCallCount = 0;
-
-    instance<A>().addDeferredOperation(
-                [&](A* const&p){
-                    if (p!=&a) return pending;
-                    ++funcCallCount;
-                    return finished;});
-
-    detail::InstanceRegistration<A> registration(&a);
-
-    QCOMPARE(funcCallCount,1);
-}
-
-
-
-void InstanceTest::functionsWithDifferentConditionsWillBeCalledOnInstanceChange()
-{
-    class A{};
-
-    A a;
-
-    int funcCallCount1 = 0;
-    int funcCallCount2 = 0;
-    bool enabled = false;
-
-    auto func1 = [&](A* const&p){
-                        if (!enabled) return pending;
-                        if (p!=&a) return pending;
-                        ++funcCallCount1;
-                        return finished;};
-    auto func2 = [&](A* const&p){
-                        if (!enabled) return pending;
-                        if (p!=nullptr) return pending;
-                        ++funcCallCount2;
-                        return finished;};
-    const int n = 20;
-    for(int i = 0;i<n;++i){
-        instance<A>().addDeferredOperation(func1);
-        instance<A>().addDeferredOperation(func2);
+        QCOMPARE(callCount,1);
     }
+    QCOMPARE(callCount,1);
+}
 
-    QCOMPARE(funcCallCount1,0);
-    QCOMPARE(funcCallCount2,0);
+void InstanceTest::ifAvailable_willBeCalledIndirectlyOnce()
+{
+    class A{};
 
-    enabled = true;
+    A a;
+
+    int callCount = 0;
+    instance<A>().ifAvailable([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
+
+    QCOMPARE(callCount,0);
+
+    detail::InstanceRegistration<A> registration(&a);
+
+    QCOMPARE(callCount,1);
 
     {
+        A b;
+        detail::ReplacingInstanceRegistration<A> registration1(&b);
 
-        detail::InstanceRegistration<A> registration(&a);
-
-        QCOMPARE(funcCallCount1,n);
-        QCOMPARE(funcCallCount2,0);
-
+        QCOMPARE(callCount,1);
     }
-
-    QCOMPARE(funcCallCount1,n);
-    QCOMPARE(funcCallCount2,n);
-
+    QCOMPARE(callCount,1);
 }
+
+void InstanceTest::becomesUnavailable_willNotBeCalledDirectlyOnce()
+{
+    class A{};
+
+    A a;
+
+    detail::InstanceRegistration<A> registration(&a);
+
+    int callCount = 0;
+    instance<A>().becomesUnavailable([&](A&r){ ++callCount; QCOMPARE(&r,&a); });
+}
+
+void InstanceTest::becomesUnavailable_willBeCalledIndirectlyOnce()
+{
+    class A{};
+
+    A a;
+
+    int callCount = 0;
+    instance<A>().becomesUnavailable([&callCount,&a](A&r){ ++callCount; QCOMPARE(&r,&a); });
+
+    QCOMPARE(callCount,0);
+
+    detail::InstanceRegistration<A> registration(&a);
+
+    QCOMPARE(callCount,0);
+
+    {
+        A b;
+        detail::ReplacingInstanceRegistration<A> registration1(&b);
+
+        QCOMPARE(callCount,0);
+    }
+    QCOMPARE(callCount,0);
+}
+
 
 void InstanceTest::recursiveQueuingWorks()
 {
@@ -272,43 +229,33 @@ void InstanceTest::recursiveQueuingWorks()
 
     A a;
 
-    int funcCallCount1 = 0;
-    int funcCallCount2 = 0;
-
-    auto func2 = [&](A* const&p){
-                    if (p!=nullptr) return pending;
-                    ++funcCallCount2;
-                    return finished;};
-
-    auto func1 = [&](A* const&p){
-                    if (p!=&a) return pending;
-                    instance<A>().addDeferredOperation(func2);
-                    ++funcCallCount1;
-                    return finished;};
-
-    instance<A>().addDeferredOperation(func1);
+    int callCount1 = 0;
+    int callCount2 = 0;
 
 
-    QCOMPARE(funcCallCount1,0);
-    QCOMPARE(funcCallCount2,0);
+    auto func2 = [&](A&){ ++callCount2; };
+    auto func1 = [&](A&){ ++callCount1; instance<A>().ifAvailable(func2); };
+
+    instance<A>().ifAvailable(func1);
+
+    QCOMPARE(callCount1,0);
+    QCOMPARE(callCount2,0);
+
+    detail::InstanceRegistration<A> registration(&a);
+
+    QCOMPARE(callCount1,1);
+    QCOMPARE(callCount2,1);
 
     {
-        detail::InstanceRegistration<A> registration(&a);
+        A b;
+        detail::ReplacingInstanceRegistration<A> registration1(&b);
 
-        QCOMPARE(funcCallCount1,1);
-        QCOMPARE(funcCallCount2,0);
+        QCOMPARE(callCount1,1);
+        QCOMPARE(callCount2,1);
     }
+    QCOMPARE(callCount1,1);
+    QCOMPARE(callCount2,1);
 
-    QCOMPARE(funcCallCount1,1);
-    QCOMPARE(funcCallCount2,1);
-
-    {
-        detail::InstanceRegistration<A> registration(&a);
-
-        QCOMPARE(funcCallCount1,1);
-        QCOMPARE(funcCallCount2,1);
-
-    }
 }
 
 void InstanceTest::registerForDestructionWorks()
@@ -355,44 +302,7 @@ void InstanceTest::instanceRefWorks()
 
 
 }
-void InstanceTest::instanceBeforeIsAvailableToDefferedOperations()
-{
-    class A{};
 
-    A a,b;
-
-    A* before = nullptr;
-    A* current = nullptr;
-
-    constexpr A* null = nullptr;
-
-    instance<A>().addDeferredOperationWithArgBefore(
-                [&](A* b, A* c){
-                    before = b;
-                    current = c;
-                    return pending;
-    });
-
-    QCOMPARE(before,null);
-    QCOMPARE(current,null);
-
-    {
-        detail::InstanceRegistration<A> registration(&a);
-
-        QCOMPARE(before,null);
-        QCOMPARE(current,&a);
-
-        detail::ReplacingInstanceRegistration<A> registration1(&b);
-
-        QCOMPARE(before,&a);
-        QCOMPARE(current,&b);
-    }
-
-    QCOMPARE(before,&a);
-    QCOMPARE(current,null);
-
-
-}
 
 void InstanceTest::operatorNewNotUsedOnFinishedFunctions()
 {
@@ -400,16 +310,17 @@ void InstanceTest::operatorNewNotUsedOnFinishedFunctions()
 
     const int newCountBefore = newCallCount();
 
-    instance<A>().addDeferredOperationWithArgBefore([&](A const*,A const*){ return finished; });
-    instance<A>().addDeferredOperation([&](A const*){ return finished; });
+    auto noop = [](A&){ };
+
+    A a;
+    detail::InstanceRegistration<A> registration(&a);
+    instance<A>().ifAvailable(noop);
 
     QCOMPARE(newCountBefore,newCallCount());
 
-    instance<A>().addDeferredOperationWithArgBefore([&](A const*,A const*){ return pending; });
-    instance<A>().addDeferredOperation([&](A const*){ return pending; });
-    instance<A>().ifAvailable([&](A const&){ });
+    instance<A>().becomesUnavailable(noop);
 
-    QVERIFY(newCallCount()>=(newCountBefore+3));
+    QVERIFY(newCallCount()>=(newCountBefore+1));
 }
 
 void InstanceTest::registeredInstanceAccessDoesNotInvokeOperatorNew()

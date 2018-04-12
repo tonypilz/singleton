@@ -1,5 +1,4 @@
 
-#include "DeferredOperationsTest.h"
 #include "OptionalValueTest.h"
 #include "TestMain.h"
 
@@ -34,11 +33,6 @@ TestMain::TestMain(int argc, char* argv[])
 
     {
         RegistrationTest tc;
-        if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
-    }
-
-    {
-        DeferredOperationsTest tc;
         if (QTest::qExec(&tc, argc, argv)!=0) testFailed();
     }
 

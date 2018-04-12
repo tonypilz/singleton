@@ -30,20 +30,15 @@ private slots:
 
     void undefinedFunctionWillBeCalledIfInstanceGetsUndefined();
 
-    void functionWillBeCalledOnlyOnceDirectly();
-    void functionWillBeCalledOnlyOnceIndirectly();
-
-    void conditionalFunctionWillBeCalledDirectlyIfInstanceDefined();
-    void conditionalFunctionWillBeCalledIfInstanceDefined();
-
-    void functionsWithDifferentConditionsWillBeCalledOnInstanceChange();
+    void ifAvailable_willBeCalledDirectlyOnce();
+    void ifAvailable_willBeCalledIndirectlyOnce();
+    void becomesUnavailable_willNotBeCalledDirectlyOnce();
+    void becomesUnavailable_willBeCalledIndirectlyOnce();
 
     void recursiveQueuingWorks();
     void registerForDestructionWorks();
 
     void instanceRefWorks();
-
-    void instanceBeforeIsAvailableToDefferedOperations();
 
     void operatorNewNotUsedOnFinishedFunctions();
 

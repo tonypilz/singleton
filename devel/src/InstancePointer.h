@@ -1,11 +1,12 @@
 #pragma once
 
 #include "NullptrAccessHandler.h"
-#include "DeferredOperations.h"
 #include <functional>
+#include <list>
 
 namespace global {
 namespace detail {
+
 
 template<typename T>
 class InstancePointer {
@@ -24,24 +25,15 @@ public:
     T& operator*() const& { return *instancePtr;}
     T* operator->() const{ if (instancePtr==nullptr) global::onNullPtrAccess<>(); return instancePtr; }
 
-    template<typename Op >
-    void addDeferredOperationWithArgBefore(Op func){
-        deferredOperations.addDeferredOperationWithArgBefore(func,instancePtr);
-    }
-
-    template<typename DeferredOperation>
-    void addDeferredOperation(DeferredOperation op){
-        deferredOperations.addDeferredOperation(op,instancePtr);
-    }
-
     template<typename Func >
     void ifAvailable(Func func){
-        deferredOperations.ifAvailable(func,instancePtr);
+        if (instancePtr!=nullptr) { func(*instancePtr); return; }
+        ifAvailableOps.emplace_back(func);
     }
 
     template<typename Func >
     void becomesUnavailable(Func func){
-        deferredOperations.becomesUnavailable(func,instancePtr);
+        becomesUnavailableOps.emplace_back(func); //never directly
     }
 
 private:
@@ -50,7 +42,9 @@ private:
         if (instancePtr == t) return *this; //nothing changed
         auto before = instancePtr;
         instancePtr = t;
-        deferredOperations.conditionsChanged(before, instancePtr);
+
+        if (instancePtr!=nullptr) { for(auto const& op:ifAvailableOps) op(*instancePtr); ifAvailableOps.clear();}
+        if (before!=nullptr && instancePtr==nullptr ) { for(auto const& op:becomesUnavailableOps) op(*before); becomesUnavailableOps.clear(); }
         return *this;
     }
 
@@ -62,7 +56,9 @@ private:
     InstancePointer(ClassType const&) = delete;
     ClassType const& operator=(ClassType const&) = delete;
 
-    detail::DeferredOperations<T> deferredOperations; //todo
+    using DeferredOperation = std::list<std::function<void(T&)>>;
+    DeferredOperation ifAvailableOps;
+    DeferredOperation becomesUnavailableOps;
 
     T* instancePtr = nullptr;
 };
