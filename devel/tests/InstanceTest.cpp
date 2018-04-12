@@ -45,71 +45,37 @@ void InstanceTest::aDerivedInstanceIsAccessibleWithoutSlicing()
     QCOMPARE(res->x,val);
 }
 
+namespace {
+    int customOnNullPtrAccessCount = 0;
 
-void InstanceTest::gettingNullThrowsWithoutHandler()
+}
+
+namespace global {
+template<> void onNullPtrAccess<>(){
+    ++customOnNullPtrAccessCount;
+    global::onNullPtrAccess<int>();
+
+}
+}
+void InstanceTest::gettingNullInvokesCustomHandler()
 {
 #ifdef __cpp_exceptions
     class A{};
 
     try{
+        customOnNullPtrAccessCount = 0;
         instance<A>();
     }
-    catch(NullptrAccess const&){}
-    catch(...){ QFAIL("");}
+    catch(NullptrAccess const&){
+        QCOMPARE(1,customOnNullPtrAccessCount);
+    }
+    catch(...){
+        QFAIL("");
+    }
 #else
     QSKIP("skipped due to disabled exceptions", SkipAll);
 #endif
 }
-
-void InstanceTest::gettingNullInvokesInstalledUntypeHandler()
-{
-
-#ifdef __cpp_exceptions
-
-    class UntypedTestHandler : public std::exception {};
-
-    onNullptrAccess() = [](){ detail::throwImpl(UntypedTestHandler{});};
-
-
-    class A{};
-
-    try{
-        instance<A>();
-    }
-    catch(UntypedTestHandler const&){}
-    catch(...){ QFAIL("");}
-
-    onNullptrAccess() = std::function<void()>{}; //cleanup installed handler
-
-#else
-    QSKIP("skipped due to disabled exceptions", SkipAll);
-#endif
-
-}
-
-void InstanceTest::gettingNullInvokesInstalledTypeHandlerBeforeUntyped()
-{
-
-    class A{};
-
-    A a;
-
-    class UntypedTestHandler : public std::exception {};
-    class TypedTestHandler : public std::exception {};
-
-    auto& hu = onNullptrAccess();
-    auto& ht = instance<A>().onNullPtrAccess;
-
-
-    hu = [](){ detail::throwImpl(UntypedTestHandler());};
-    ht = [&a](){ return &a;};
-
-    QCOMPARE(static_cast<A*>(instance<A>()),&a);
-
-    hu = std::function<void()>{}; //cleanup installed handler
-}
-
-
 
 void InstanceTest::functionWillBeCalledDirectlyIfInstanceDefined()
 {

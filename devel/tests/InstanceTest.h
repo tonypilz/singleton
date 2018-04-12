@@ -19,9 +19,7 @@ private slots:
 
     void aDerivedInstanceIsAccessibleWithoutSlicing();
 
-    void gettingNullThrowsWithoutHandler();
-    void gettingNullInvokesInstalledUntypeHandler();
-    void gettingNullInvokesInstalledTypeHandlerBeforeUntyped();
+    void gettingNullInvokesCustomHandler();
 
 
     void functionWillBeCalledDirectlyIfInstanceDefined();
