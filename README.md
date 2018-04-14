@@ -83,7 +83,7 @@ The compiler flag `-std=c++11` is used
  
 ## Installation
 
-just copy the single header file [globalInstances.h](include/globalInstances.h) (~240sloc) into the project and include it (see in the first example).
+just copy the single header file [globalInstances.h](include/globalInstances.h) (~200sloc) into the project and include it (see in the first example).
 
 # Library Aspects
 ## How to do Testing 
@@ -638,7 +638,7 @@ As can be seen in the example, the instance of `GlobalInstances` has two purpose
 The indicator instance of type `RunelevelX` is used here to indicate a certain program startup and shutdown state. Therefore it can be used to trigger a two phase initialization. However, as discussed in [this section](#how-to-avoid-two-phase-initialization), a two phase initialization should be avoided if possible which is why there should rarely be the need for an indicator instance. 
 
 ### Customizing the Library
- Since this library is rather small (~240 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
+ Since this library is rather small (~200 sloc) with 5 relevant classes it can be customized fairly easy. For more details see section [Under the Hood](#under-the-hood) below.
 
 ### Comparision to Classical Singleton
 
@@ -666,17 +666,20 @@ The linked sections explain in more detail why they are drawbacks and how they a
 
 Most of the singleton libraries found on github in April 2018 were demos/examples or random implementations within other projects. The remaining dedicated singleton implementations will be compared in the following table. The indicators are __+__ for improvement over the classical singelton, __=__ for comparable, __-__ for worsening. The numbers 1-5 refer to the drabacks listed above.
 
-| Aspect   | 1 | 2 | 3             | 4 | 5             | automatic destruction | threadsave construction | forces virtual destructor | thread local instances | dependency   |
-|----------|---|---|---------------|---|---------------|-----------------------|-------------------------|---------------------------|------------------------|--------------|
-| This Lib | + | + | +             | + | +             | =                     | -<sup>7</sup>                       | =                         | =                      | stl          |
-| [herpe]  | = | = | =<sup>2</sup> | = | =<sup>1</sup> | =                     | =                       | -                         | =                      | stl          |
-| [ugrif]  | = | = | =<sup>2</sup> | + | =             | -                     | -                       | =                         | =                      | /            |
-| [xytis]  | = | = | =<sup>2</sup> | + | =             | -<sup>3</sup>         | -                       | =                         | =                      | stl          |
-| [aworx]  | = | = | =<sup>2</sup> | + | =             | -                     | -<sup>5</sup>           | -                         | =                      | stl, ALib    |
-| [fwolt]  | = | = | =             | = | +             | =                     | =                       | =                         | =                      | stl, fw      |
-| [zyf38]  | = | = | =<sup>2</sup> | = | =             | =                     | =                       | =                         | =                      | stl          |
-| [cheno]  | + | = | =<sup>2</sup> | + | =             | -<sup>4</sup>         | =                       | =                         | +                      | stl, pthread |
-| [cppma]  | + | = | +<sup>2</sup> | + | +<sup>6</sup> | =                     | =                       | =                         | =                      | stl, boost   |
+| Aspect              | 1 | 2 | 3             | 4 | 5             | single header file | automatic destruction | threadsave construction | forces virtual destructor | thread local instances |
+|---------------------|---|---|---------------|---|---------------|--------------------|-----------------------|-------------------------|---------------------------|------------------------|
+| This Lib            | + | + | +             | + | +             | =                  | =                     | -<sup>7</sup>           | =                         | =                      |
+| [boost]<sup>9</sup> | = | = | +<sup>8</sup> | + | =             | -                  | =                     | =                       | =                         | +                      |
+| [poco]              | = | = | =             | = | =             | -                  | =                     | =                       | =                         | =                      |
+| [folly]             | + | = | =<sup>2</sup> | + | +             | -                  | =                     | =                       | =                         | =                      |
+| [herpe]             | = | = | =<sup>2</sup> | = | =<sup>1</sup> | -                  | =                     | =                       | -                         | =                      |
+| [ugrif]             | = | = | =<sup>2</sup> | + | =             | =                  | -                     | -                       | =                         | =                      |
+| [xytis]             | = | = | =<sup>2</sup> | + | =             | =                  | -<sup>3</sup>         | -                       | =                         | =                      |
+| [aworx]             | = | = | =<sup>2</sup> | + | =             | -                  | -                     | -<sup>5</sup>           | -                         | =                      |
+| [fwolt]             | = | = | =             | = | +             | -                  | =                     | =                       | =                         | =                      |
+| [zyf38]             | = | = | =<sup>2</sup> | = | =             | =                  | =                     | =                       | =                         | =                      |
+| [cheno]             | + | = | =<sup>2</sup> | + | =             | -                  | -<sup>4</sup>         | =                       | =                         | +                      |
+| [cppma]             | + | = | +<sup>2</sup> | + | +<sup>6</sup> | -                  | =                     | =                       | =                         | =                      |
 
  <sup>1</sup> Implementation of constructor arguments incorrect
 
@@ -692,6 +695,9 @@ Most of the singleton libraries found on github in April 2018 were demos/example
 
  <sup>7</sup> See section [Thread Savety](#thread-savety)
 
+ <sup>8</sup> Eager construction before `main()` is entered, destruction in any ordering or manually.
+
+ <sup>9</sup> Deprecated
 
 
 [herpe]: https://github.com/herpec-j/Singleton
@@ -702,6 +708,9 @@ Most of the singleton libraries found on github in April 2018 were demos/example
 [zyf38]: https://github.com/zyf3883310/C-11-Thread-Safe-Singleton
 [cheno]: https://github.com/chenokay/selib
 [cppma]: https://github.com/cppmaven/Singularity
+[boost]: https://www.boost.org/doc/libs/1_53_0/libs/serialization/doc/singleton.html
+[folly]: https://github.com/facebook/folly/blob/master/folly/Singleton.h
+[poco]: https://pocoproject.org/docs/Poco.SingletonHolder.html
 
 # Under the Hood
  

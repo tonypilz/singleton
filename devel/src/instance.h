@@ -13,5 +13,8 @@ detail::InstancePointer<T>& instance(){ return detail::staticValue<detail::Insta
 template<typename T>
 T& instanceRef(){ return *detail::staticValue<detail::InstancePointer<T>>(); }
 
+template<typename T>
+const T& instanceCRef(){ return *detail::staticValue<detail::InstancePointer<T>>(); }
+
 
 } //global
