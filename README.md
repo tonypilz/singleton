@@ -499,7 +499,7 @@ The library can be used in an embedded environment since it
 
 <sup>1</sup>After all instances have been created, calls to instances eg `global::instance<T>()->foo()` do not invoke operator `new` new or `delete`. The same applies to all deferred calls eg `global::instance<T>().ifAvailable()` if they can be executed directly. So if they can not be executed directly because e.g an instance has not been created yet, the calls will be queued which invokes the operator `new`.
 
-<sup>2</sup>If exceptions are disabled all errors will be handled by invoking `exit()` instead of throwing an exception.
+<sup>2</sup>If exceptions are disabled all errors will be handled by invoking `exit()` instead of throwing an exception. (Note that up to version 3.5 of clang exceptions will be enabled by default since it cannot be detected easily if they are disabled. In order to disable them define the macro `EXCEPTIONS_DISABLED` eg. by adding `-DEXCEPTIONS_DISABLED` to the compile flags)
 
 
 ### How to use Multiple Instances of the Same Type

@@ -8,12 +8,13 @@
 
 #else
 
-#include "NullptrAccessHandler.h"
+#include "exceptionsAvailableDetection.h"
 #include "staticValue.h"
+#include "throwImpl.h"
+#include "NullptrAccessHandler.h"
 #include "OptionalValue.h"
 #include "InstancePointer.h"
 #include "instance.h"
 #include "InstanceRegistration.h"
-#include "throwImpl.h"
 
 #endif // USE_SINGLE_HEADER

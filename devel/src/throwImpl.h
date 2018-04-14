@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdlib> //for exit(1);
+#include "exceptionsAvailableDetection.h"
 
 namespace global {
 namespace detail {
@@ -8,12 +9,12 @@ namespace detail {
 template<typename T>
 void throwImpl(T t){
 
-#ifdef __cpp_exceptions
-    throw t;
-#else // __cpp_exceptions
+#ifdef EXCEPTIONS_DISABLED
     (void)t; //avoid unused
      exit(1);
-#endif // __cpp_exceptions
+#else
+    throw t;
+#endif
 }
 
 }

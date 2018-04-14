@@ -3,6 +3,7 @@ import subprocess
 
 headerDir = '../src'
 headerFiles = [
+   'exceptionsAvailableDetection.h',
    'staticValue.h',
    'throwImpl.h',
    'NullptrAccessHandler.h',

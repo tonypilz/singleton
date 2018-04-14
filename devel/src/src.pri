@@ -6,6 +6,7 @@ HEADERS += \
     $$PWD/OptionalValue.h \
     $$PWD/InstancePointer.h \
     $$PWD/globalInstances.h \
-    $$PWD/throwImpl.h
+    $$PWD/throwImpl.h \
+    $$PWD/exceptionsAvailableDetection.h
 
 SOURCES +=
