@@ -1,3 +1,4 @@
 build-devel-Desktop-Debug/
 devel/devel.pro.user
 devel/tools/.vscode/
+devel/tools/__pycache__
