@@ -2,7 +2,7 @@
 
 The library allows the construction of and access to global instances like the classical singleton, but fixing most of its [drawbacks](#comparision-to-classical-singleton).
 
-The following example illustrates the main usage of the library. It shows how to construct an instance of type `A`, make it globally accessible, access it and how it is destructed.
+The following example illustrates the main usage of the library. It shows how to construct an instance of type `A`, make it globally accessible, accessing it and how it is destructed.
 
 ```cpp
 #include <globalInstances.h>
@@ -12,13 +12,14 @@ struct A {
 };
 
 void bar() { 
-    global::instance<A>()->foo(); // access (prints "foo")
+    global::instance<A>()->foo();   // calls A::foo()
 } 
 
 void main(){
-    global::Instance<A> a;        // construct an make globally accessible
+    global::Instance<A> a;          // constructs an instance of type A and makes it globally accessible
     bar();
-}                                 // destruct
+}                                   // the destruction of 'a' destructs the global instance of A
+                                    // after making it globally inaccessible 
 
 ```
 
