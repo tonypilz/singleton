@@ -186,9 +186,9 @@ struct B{
 };
 
 void main(){
- global::Instance<A> a;     // throws since no instance of B available yet
+ global::Instance<A> a;          // ok, instance of B will not be accessed
  global::Instance<B> b;    
- global::instance<A>()->init();
+ global::instance<A>()->init();  // ok, instance of B is available
 }
 ```
 
